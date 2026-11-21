@@ -35,6 +35,7 @@ class Bot:
         self.side = 1               # preferred detour side
         self.last_t = 0.0
         self.charging_since = None
+        self.heal = False
 
     # ---------- helpers ----------
     def center_z(self, m):
@@ -128,7 +129,7 @@ class Bot:
             if s < best_s:
                 best, best_s, best_vis, best_d = m, s, vis, d
         farm = None
-        if best is None and hpf > 0.5:
+        if best is None and hpf > 0.5 and not self.heal:
             cands = [m for m in obs["mechs"] if m["kind"] == "npc"] + [dict(c, kind="crate") for c in obs["crates"]]
             fs = 1e9
             for c in cands:
@@ -210,7 +211,11 @@ class Bot:
             ux, uy = norm(ex - x, ey - y)
             d = math.hypot(ex - x, ey - y)
             ehp = best.get("hp", 1400) / best.get("max_hp", 1400)
-            if hpf < 0.3 and ehp > hpf + 0.1:
+            if hpf < 0.45 and ehp > 0.3:
+                self.heal = True
+            if self.heal and (hpf > 0.9 or ehp < 0.2):
+                self.heal = False
+            if self.heal:
                 mv = self.cover(x, y, z, best, goal)
                 boost = True
             else:
@@ -228,6 +233,8 @@ class Bot:
             tgo = self.loot_goal(obs, x, y, z, slot, weapons)
             if tgo:
                 mv = norm(tgo[0] - x, tgo[1] - y)
+        if self.heal and hpf > 0.9:
+            self.heal = False
         if goal is not None:
             gx, gy = norm(goal[0] - x, goal[1] - y)
             outside = zd > zr
