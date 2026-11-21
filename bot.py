@@ -280,6 +280,9 @@ class Bot:
             if self.heal:
                 mv = self.cover(x, y, z, best, goal)
                 boost = True
+            elif d > 55 and best["id"] != threat_id and ehp > 0.35:
+                # far foe that is not hitting us: break sight instead of trading shots
+                mv = self.cover(x, y, z, best, goal)
             elif dodge:
                 chg = next(m for m in enemies if m.get("charging") and abs(wrap(m["aim"][0] - math.atan2(y - m["pos"][1], x - m["pos"][0]))) < 0.15)
                 mv = self.cover(x, y, z, chg, goal)
