@@ -1,4 +1,6 @@
 """Rough local Mech Royale sim: one bot under test (slot 0, a subprocess) vs 15 house bots that hunt it.
+FFA mode: python3 sim.py MAP_DIR SEED --ffa BIN0 BIN1 ... -> 16 bot subprocesses (list cycled), no house bots,
+prints JSON {seed, places, kills} per slot.
 ponytail: approximates the server (no NPCs, crates, mortar, drops, trees, upgrades); good for A/B, not for absolute scores.
 Usage: python3 sim.py MAP_DIR SEED -- python3 -u bot.py   -> prints JSON {seed, place, t, kills}
 """
@@ -52,7 +54,8 @@ class Mech:
 
 
 class Sim:
-    def __init__(self, map_dir, seed, cmd):
+    def __init__(self, map_dir, seed, cmd, ffa=None):
+        self.ffa = ffa
         self.rng = random.Random(seed)
         self.seed = seed
         self.hello = load_hello()
@@ -60,7 +63,7 @@ class Sim:
         self.hello["map"]["dir"] = map_dir
         self.w = World(map_dir)
         self.t, self.tick = 0.0, 0
-        self.proj, self.pickups, self.sounds, self.beams, self.events = [], [], [], [], []
+        self.proj, self.pickups, self.sounds, self.beams = [], [], [], []
         z = self.cfg["zone"]
         self.zc, self.zr = list(z["start_center"]), z["start_radius"]
         self.phases = self._zone_plan()
@@ -83,11 +86,16 @@ class Sim:
             self.pickups.append({"id": 8000 + k, "kind": self.rng.choice(["mortar", "laser", "lightning"]),
                                  "pos": self.open_spot(self.zc, self.zr)})
         self.next_pick = 8100
-        self.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
-        self.send(dict(self.hello, slot=0, seed=seed))
-        r = json.loads(self.proc.stdout.readline())
-        assert r.get("type") == "ready", r
+        self.events = {m.id: [] for m in self.mechs}
+        self.procs = {}
+        for i, c in ([(0, cmd)] if not ffa else [(i, [ffa[i % len(ffa)]]) for i in range(16)]):
+            self.procs[i] = subprocess.Popen(c, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
+            self.send(dict(self.hello, slot=i, seed=seed * 16 + i if ffa else seed), i)
+            r = json.loads(self.procs[i].stdout.readline())
+            assert r.get("type") == "ready", r
+        self.proc = self.procs[0]
         self.late = 0
+        self.hits0 = []
         self.max_ms = 0.0
 
     def open_spot(self, c, r):
@@ -121,9 +129,12 @@ class Sim:
         return {"center": nc, "radius": 0.0, "next_center": nc, "next_radius": 0.0,
                 "shrink_start": s0, "shrink_end": s1, "dps": dps}
 
-    def send(self, msg):
-        self.proc.stdin.write(json.dumps(msg) + "\n")
-        self.proc.stdin.flush()
+    def send(self, msg, i=0):
+        self.procs[i].stdin.write(json.dumps(msg) + "\n")
+        self.procs[i].stdin.flush()
+
+    def hostile(self, a, b):
+        return self.ffa or a == 0 or b == 0
 
     # ---------- physics ----------
     def surface(self, x, y, z):
@@ -222,26 +233,29 @@ class Sim:
         if rear:
             amt *= self.cfg["mech"]["rear_mult"]
         dst.hp -= amt
+        if dst.id == 0:
+            self.hits0.append((self.t, src.id if src else -1, amt))
         if TRACE and 0 in (dst.id, src.id if src else -1):
             print(f"{self.t:6.1f} {src.id if src else 'Z'}->{dst.id} {weapon} {amt:.0f} rear={rear} hp={dst.hp:.0f} d={math.dist(dst.pos, origin):.0f}", file=sys.stderr)
         dst.last_dmg = self.t
         if src is not None:
             src.last_dmg = self.t
-        if dst.id == 0:
-            self.events.append({"type": "damaged", "amount": round(amt, 1), "weapon": weapon, "bearing": b,
+        if dst.id in self.procs:
+            self.events[dst.id].append({"type": "damaged", "amount": round(amt, 1), "weapon": weapon, "bearing": b,
                                 "by": src.id if src else None, "rear": rear})
-        if src is not None and src.id == 0:
-            self.events.append({"type": "hit", "target": dst.id, "amount": round(amt, 1), "weapon": weapon})
+        if src is not None and src.id in self.procs:
+            self.events[src.id].append({"type": "hit", "target": dst.id, "amount": round(amt, 1), "weapon": weapon})
         if src is not None and src.id != 0 and dst.id != 0:
             self.react[dst.id] = self.react.get(dst.id, 0)
         if dst.hp <= 0:
             dst.alive, dst.died_t = False, self.t
+            dst.place = 1 + sum(m.alive for m in self.mechs)
             dst.hp = 0
             self.sound("death", dst.pos)
             if src is not None:
                 src.kills += 1
-                if src.id == 0:
-                    self.events.append({"type": "kill", "target": dst.id})
+                if src.id in self.procs:
+                    self.events[src.id].append({"type": "kill", "target": dst.id})
             if dst.weapons[1]:
                 self.pickups.append({"id": self.next_pick, "kind": dst.weapons[1]["kind"], "pos": list(dst.pos)})
                 self.next_pick += 1
@@ -298,7 +312,7 @@ class Sim:
                     x, y, z = self.muzzle(m)
                     best, bd = None, st["range"]
                     for o in self.mechs:
-                        if o is m or not o.alive or (m.id != 0 and o.id != 0):
+                        if o is m or not o.alive or not self.hostile(m.id, o.id):
                             continue
                         d = math.dist(o.pos[:2], m.pos[:2])
                         b = math.atan2(o.pos[1] - y, o.pos[0] - x)
@@ -325,7 +339,7 @@ class Sim:
             if self.w.blocked(px, py, pz):
                 break
             for o in self.mechs:
-                if o is not m and o.alive and (m.id == 0 or o.id == 0) and self.hit_cyl(o, px, py, pz, 0.0):
+                if o is not m and o.alive and self.hostile(m.id, o.id) and self.hit_cyl(o, px, py, pz, 0.0):
                     self.damage(m, o, dmg, "laser", m.pos)
                     self.beams.append({"by": m.id, "kind": "laser", "path": [[x, y, z], [px, py, pz]], "age": 0})
                     return
@@ -344,7 +358,7 @@ class Sim:
                     hit = True
                     break
                 for o in self.mechs:
-                    if o.alive and o.id != p["by"] and (p["by"] == 0 or o.id == 0) and self.hit_cyl(o, px, py, pz):
+                    if o.alive and o.id != p["by"] and self.hostile(p["by"], o.id) and self.hit_cyl(o, px, py, pz):
                         self.damage(self.mechs[p["by"]], o, p["dmg"], "gun", (x, y, z))
                         hit = True
                         break
@@ -370,11 +384,11 @@ class Sim:
         return self.w.los(*eye, b.pos[0], b.pos[1], b.pos[2] + 4.5, 2.0, 2.0) or \
             self.w.los(*eye, b.pos[0], b.pos[1], b.pos[2] + 8.8, 2.0, 2.0)
 
-    def obs(self):
-        me = self.mechs[0]
+    def obs(self, me=None):
+        me = me or self.mechs[0]
         mechs = []
-        for o in self.mechs[1:]:
-            if not o.alive:
+        for o in self.mechs:
+            if o is me or not o.alive:
                 continue
             if self.sees(me, o):
                 me.seen[o.id] = self.t
@@ -389,11 +403,11 @@ class Sim:
                   abs(wrap(math.atan2(p["pos"][1] - me.pos[1], p["pos"][0] - me.pos[0]) - me.aim[0])) < math.pi / 3)
                  and self.w.los(*eye, p["pos"][0], p["pos"][1], p["pos"][2] + 0.5)]
         projs = [{"id": p["id"], "kind": "gun", "pos": p["pos"], "vel": p["vel"]} for p in self.proj
-                 if p["by"] != 0 and math.dist(p["pos"], me.pos) < 200]
+                 if p["by"] != me.id and math.dist(p["pos"], me.pos) < 200]
         sr = self.cfg["sound"]
         snd = []
         for kind, pos, t, by in self.sounds:
-            if by == 0:
+            if by == me.id:
                 continue
             d = math.dist(pos[:2], me.pos[:2])
             if d <= sr["range"].get(kind, 100):
@@ -405,11 +419,11 @@ class Sim:
         stats = {k: mc[k] for k in ("walk_speed", "boost_speed", "turn_rate", "eye_height", "muzzle_height")}
         zd = math.dist(me.pos[:2], z["center"])
         return {"type": "obs", "tick": self.tick, "t": round(self.t, 2), "alive": sum(m.alive for m in self.mechs),
-                "self": {"id": 0, "pos": me.pos, "vel": me.vel, "aim": me.aim, "hp": me.hp, "max_hp": me.max_hp,
+                "self": {"id": me.id, "pos": me.pos, "vel": me.vel, "aim": me.aim, "hp": me.hp, "max_hp": me.max_hp,
                          "energy": me.energy, "max_energy": mc["energy"], "grounded": me.grounded, "cubes": 0,
                          "upgrades": [], "in_zone": zd <= z["radius"], "weapons": me.weapons, "stats": stats},
-                "mechs": mechs, "projectiles": projs, "crates": [], "cubes": [], "pickups": picks, "sounds": snd,
-                "beams": [], "events": self.events, "drops": [], "zone": z, "offer": None}
+                "mechs": mechs, "projectiles": projs, "crates": [], "cubes": ([{"id": 5000 + int(self.t // 20), "pos": [me.pos[0] + 30, me.pos[1], me.pos[2]]}] if os.environ.get("FAKECUBE") else []), "pickups": picks, "sounds": snd,
+                "beams": [], "events": self.events[me.id], "drops": ([{"id": 20000, "pos": [z["next_center"][0], z["next_center"][1], 0.0], "radius": 8, "lands_in": 0, "capture_s": 4, "progress": 0, "holder": None}] if os.environ.get("FAKEDROP") and 70 < self.t < 140 else []), "zone": z, "offer": None}
 
     # ---------- house bots ----------
     def hunters(self):
@@ -533,14 +547,67 @@ class Sim:
                     self.pickups.append({"id": self.next_pick, "kind": old["kind"], "pos": list(m.pos)})
                     self.next_pick += 1
                 self.take(m, p)
-                self.events.append({"type": "took", "id": p["id"], "kind": p["kind"], "slot": 1})
+                self.events[m.id].append({"type": "took", "id": p["id"], "kind": p["kind"], "slot": 1})
+
+    def run_ffa(self):
+        dur = self.cfg["match"]["duration_s"]
+        while self.t < dur and sum(m.alive for m in self.mechs) > 1:
+            live = [m for m in self.mechs if m.alive]
+            for m in live:
+                self.send(self.obs(m), m.id)
+            for m in live:
+                a = json.loads(self.procs[m.id].stdout.readline())
+                self.events[m.id] = []
+                if a.get("tick") == self.tick:
+                    self.apply(m, a)
+            self.physics()
+            for m in self.mechs:
+                if not m.alive and m.id in self.procs:
+                    self.end(m.id, m.place, m.kills)
+        alive = sorted((m for m in self.mechs if m.alive), key=lambda m: -m.hp)
+        for k, m in enumerate(alive):
+            m.place = k + 1
+            self.end(m.id, m.place, m.kills)
+        return {"seed": self.seed, "t": round(self.t, 1), "places": [m.place for m in self.mechs],
+                "kills": [m.kills for m in self.mechs]}
+
+    def end(self, i, place, kills):
+        p = self.procs.pop(i)
+        try:
+            p.stdin.write(json.dumps({"type": "end", "place": place, "kills": kills}) + "\n")
+            p.stdin.close()
+            p.wait(timeout=3)
+        except Exception:
+            p.kill()
+
+    def physics(self):
+        for _ in range(2):
+            self.t += DT
+            self.tick += 1
+            for m in self.mechs:
+                if m.alive:
+                    self.step_mech(m)
+                    self.fire_weapons(m)
+            self.step_proj()
+            z = self.zone()
+            for m in self.mechs:
+                if not m.alive:
+                    continue
+                if math.dist(m.pos[:2], z["center"]) > z["radius"]:
+                    self.damage(None, m, z["dps"] * DT, "zone", m.pos)
+                    m.last_dmg = self.t
+                elif self.t - m.last_dmg > self.cfg["mech"]["regen_delay"]:
+                    m.hp = min(m.max_hp, m.hp + self.cfg["mech"]["regen_per_s"] * DT)
+        self.sounds = [s for s in self.sounds if self.t - s[2] < 0.1]
 
     def run(self):
+        if self.ffa:
+            return self.run_ffa()
         me = self.mechs[0]
         dur = self.cfg["match"]["duration_s"]
         while me.alive and self.t < dur and sum(m.alive for m in self.mechs) > 1:
             o = self.obs()
-            self.events = []
+            self.events[0] = []
             t0 = time.perf_counter()
             self.send(o)
             line = self.proc.stdout.readline()
@@ -552,28 +619,14 @@ class Sim:
                 a = json.loads(line)
                 if a.get("tick") == self.tick:
                     self.apply(me, a)
+            if os.environ.get("ZTRACE") and self.tick % 20 == 0:
+                z = self.zone(); me = self.mechs[0]
+                print(f"t={self.t:.0f} pos=({me.pos[0]:.0f},{me.pos[1]:.0f},{me.pos[2]:.0f}) hp={me.hp:.0f} zd={math.dist(me.pos[:2], z['center']):.0f} zr={z['radius']:.0f} nzd={math.dist(me.pos[:2], z['next_center']):.0f} nzr={z['next_radius']:.0f} v=({me.vel[0]:.1f},{me.vel[1]:.1f})", file=sys.stderr)
             hunt = self.hunters()
             for m in self.mechs[1:]:
                 if m.alive:
                     self.house(m, m.id in hunt)
-            for _ in range(2):
-                self.t += DT
-                self.tick += 1
-                for m in self.mechs:
-                    if m.alive:
-                        self.step_mech(m)
-                        self.fire_weapons(m)
-                self.step_proj()
-                z = self.zone()
-                for m in self.mechs:
-                    if not m.alive:
-                        continue
-                    if math.dist(m.pos[:2], z["center"]) > z["radius"]:
-                        self.damage(None, m, z["dps"] * DT, "zone", m.pos)
-                        m.last_dmg = self.t
-                    elif self.t - m.last_dmg > self.cfg["mech"]["regen_delay"]:
-                        m.hp = min(m.max_hp, m.hp + self.cfg["mech"]["regen_per_s"] * DT)
-            self.sounds = [s for s in self.sounds if self.t - s[2] < 0.1]
+            self.physics()
         alive = [m for m in self.mechs if m.alive]
         if me.alive:
             place = 1 + sum(1 for m in alive if m.hp > me.hp)
@@ -585,10 +638,19 @@ class Sim:
             self.proc.wait(timeout=3)
         except Exception:
             self.proc.kill()
-        return {"seed": self.seed, "place": place, "t": round(self.t, 1), "kills": me.kills,
+        last = [h for h in self.hits0 if h[0] > self.t - 10]
+        who = {}
+        for h in last:
+            who[h[1]] = who.get(h[1], 0) + h[2]
+        tiers = ",".join(f"{'Z' if k < 0 else self.tier[k][0]}{v:.0f}" for k, v in sorted(who.items(), key=lambda kv: -kv[1]))
+        return {"seed": self.seed, "place": place, "who": tiers, "t": round(self.t, 1), "kills": me.kills,
                 "late": self.late, "max_ms": round(self.max_ms, 1)}
 
 
 if __name__ == "__main__":
-    k = sys.argv.index("--")
-    print(json.dumps(Sim(sys.argv[1], int(sys.argv[2]), sys.argv[k + 1:]).run()), flush=True)
+    if "--ffa" in sys.argv:
+        k = sys.argv.index("--ffa")
+        print(json.dumps(Sim(sys.argv[1], int(sys.argv[2]), None, sys.argv[k + 1:]).run()), flush=True)
+    else:
+        k = sys.argv.index("--")
+        print(json.dumps(Sim(sys.argv[1], int(sys.argv[2]), sys.argv[k + 1:]).run()), flush=True)
