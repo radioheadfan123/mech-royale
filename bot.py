@@ -102,7 +102,7 @@ class Bot:
 
         for e in obs["events"]:
             if e["type"] == "damaged" and e.get("by") is not None and e.get("bearing") is not None:
-                self.threat = (e["bearing"], t, e["by"])
+                self.threat = (e["bearing"], t, e["by"], e.get("rear"))
 
         weapons = me["weapons"]
         slot = {w["kind"]: i for i, w in enumerate(weapons) if w}
@@ -126,7 +126,7 @@ class Bot:
         for m in enemies:
             d = math.dist(m["pos"], me["pos"])
             vis = self.w.los(x, y, mz, m["pos"][0], m["pos"][1], self.center_z(m))
-            s = d + m.get("hp", 1400) / 20 - (60 if m["id"] == threat_id else 0) + (0 if vis else 150)
+            s = d + m.get("hp", 1400) / 20 - ((200 if self.threat[3] else 60) if m["id"] == threat_id else 0) + (0 if vis else 150)
             if s < best_s:
                 best, best_s, best_vis, best_d = m, s, vis, d
         farm = None
