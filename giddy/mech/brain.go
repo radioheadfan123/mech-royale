@@ -1963,6 +1963,7 @@ func squadParams(p Params) Params {
 	p.LoseRule = true
 	p.FightLoot = 70
 	p.FarmHP = 0.5
+	p.UseDrops = true // ours: capture supply drops in practice (3 cubes + full HP)
 
 	p.LaserSeek = 240
 	p.LaserUp = true
