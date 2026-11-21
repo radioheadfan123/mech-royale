@@ -12,3 +12,4 @@ The `giddy/` folder is giddygiddyboy's Mech Royale bot, used under its MIT Licen
 
 Every change we make on top of it is listed in this section and in the git history of `giddy/`.
 - G7 longer retreat (ours): after the lose rule fires, retreat for 6 s instead of 1.5 s, so regen can start.
+- G9 earlier squad mode (ours): in practice, switch to the squad parameters at 8 s instead of 20 s.
