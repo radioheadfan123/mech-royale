@@ -187,6 +187,11 @@ class Bot:
                 g = weapons[slot["gun"]]
                 if g.get("ammo", 1) > 0 and g.get("reload", 0) <= 0:
                     fire[slot["gun"]] = True
+        if tgt is not None and tgt.get("kind") == "mech":
+            fire = [False, False]  # probe: never shoot mechs
+            L = weapons[slot["laser"]] if "laser" in slot else None
+            if L and L.get("charge", 0) > 0:
+                fire[slot["laser"]] = True  # a charge cannot be dropped: keep holding until it auto-fires
         if aim is None:
             if self.threat and t - self.threat[1] < 3:
                 aim = [self.threat[0], 0.0]
@@ -219,7 +224,7 @@ class Bot:
                 self.heal = True
             if self.heal and (hpf > 0.9 or ehp < 0.2):
                 self.heal = False
-            if self.heal:
+            if self.heal or True:  # probe: always hide from the nearest mech
                 mv = self.cover(x, y, z, best, goal)
                 boost = True
             elif dodge:
