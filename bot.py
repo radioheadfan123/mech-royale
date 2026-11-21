@@ -125,6 +125,8 @@ class Bot:
         best, best_s = None, 1e9
         for m in enemies:
             d = math.dist(m["pos"], me["pos"])
+            if d > 150 and m["id"] != threat_id:
+                continue
             vis = self.w.los(x, y, mz, m["pos"][0], m["pos"][1], self.center_z(m))
             s = d + m.get("hp", 1400) / 20 - (60 if m["id"] == threat_id else 0) + (0 if vis else 150)
             if s < best_s:
