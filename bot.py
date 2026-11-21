@@ -38,6 +38,7 @@ class Bot:
         self.charging_since = None
         self.heal = False
         self.prey = None            # (x, y, t) last place we saw or heard a mech
+        self.last_tgt = None
 
     # ---------- helpers ----------
     def center_z(self, m):
@@ -136,9 +137,11 @@ class Bot:
         for m in enemies:
             d = math.dist(m["pos"], me["pos"])
             vis = self.w.los(x, y, mz, m["pos"][0], m["pos"][1], self.center_z(m))
-            s = d + m.get("hp", 1400) / 20 - ((200 if self.threat[3] else 60) if m["id"] == threat_id else 0) + (0 if vis else 150)
+            s = d + m.get("hp", 1400) / 20 - ((200 if self.threat[3] else 60) if m["id"] == threat_id else 0) + (0 if vis else 150) \
+                - (80 if m.get("hp", 1400) < 0.3 * m.get("max_hp", 1400) else 0) - (30 if m["id"] == self.last_tgt else 0)
             if s < best_s:
                 best, best_s, best_vis, best_d = m, s, vis, d
+        self.last_tgt = best["id"] if best is not None else None
         farm = None
         if (best is None or best_d > 120) and hpf > 0.35 and not self.heal:
             cands = [m for m in obs["mechs"] if m["kind"] == "npc"] + [dict(c, kind="crate") for c in obs["crates"]]
