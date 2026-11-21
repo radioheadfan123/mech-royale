@@ -224,7 +224,7 @@ class Bot:
                 boost = True
             elif dodge:
                 chg = next(m for m in enemies if m.get("charging") and abs(wrap(m["aim"][0] - math.atan2(y - m["pos"][1], x - m["pos"][0]))) < 0.15)
-                mv = self.cover(x, y, z, chg, goal)
+                mv = self.cover_near(x, y, z, chg) or self.cover(x, y, z, chg, goal)
                 boost = True
             else:
                 want = 30 if "lightning" in slot else 70
@@ -305,6 +305,23 @@ class Bot:
             if s > bs:
                 bs, best = s, norm(cx - x, cy - y)
         return best
+
+    def cover_near(self, x, y, z, foe):
+        """Closest direction to a spot 4-10 m away, reachable in a straight line, hidden from the foe (the beam is hitscan)."""
+        fx, fy, fz = foe["pos"]
+        fe = fz + 8
+        for r in (4, 7, 10):
+            for k in range(16):
+                a = k * TAU / 16
+                ux, uy = math.cos(a), math.sin(a)
+                cx, cy = x + r * ux, y + r * uy
+                gz = self.w.gz(cx, cy)
+                if abs(gz - z) > 1.2 or self.w.blocked(cx, cy, gz + 2) or self.w.wall_ahead(x, y, z, ux, uy, dist=r) is not None:
+                    continue
+                if not self.w.los(fx, fy, fe, cx, cy, gz + 4.5, end_skip=0.5) and \
+                        not self.w.los(fx, fy, fe, cx, cy, gz + 8.5, end_skip=0.5):
+                    return (ux, uy)
+        return None
 
     def loot_goal(self, obs, x, y, z, slot, weapons):
         cur = WANT.get(weapons[1]["kind"], 0) if weapons[1] else -1
