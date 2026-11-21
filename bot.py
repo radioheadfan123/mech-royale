@@ -37,6 +37,7 @@ class Bot:
         self.last_t = 0.0
         self.charging_since = None
         self.heal = False
+        self.wb_t, self.wb = -1.0, None
 
     # ---------- helpers ----------
     def center_z(self, m):
@@ -232,6 +233,13 @@ class Bot:
                 px, py = -uy * self.strafe, ux * self.strafe
                 mv = norm(px + ux * radial * 0.7, py + uy * radial * 0.7)
                 boost = energy > 35 or dodge
+                if self.w.wall_ahead(x, y, z, -ux, -uy, dist=6) is None:
+                    if t - self.wb_t > 0.5:
+                        self.wb_t, self.wb = t, self.wall_back(x, y, z, best)
+                    if self.wb:
+                        mv = norm(mv[0] * 0.4 + self.wb[0], mv[1] * 0.4 + self.wb[1])
+                elif radial < 0:
+                    mv = (px, py)  # wall at our back: slide along it, never back into it
         elif farm is not None:
             fx, fy = farm["pos"][0], farm["pos"][1]
             d = math.hypot(fx - x, fy - y)
@@ -325,6 +333,29 @@ class Bot:
                 if not self.w.los(fx, fy, fe, cx, cy, gz + 4.5, end_skip=0.5) and \
                         not self.w.los(fx, fy, fe, cx, cy, gz + 8.5, end_skip=0.5):
                     return (ux, uy)
+        return None
+
+    def wall_back(self, x, y, z, foe):
+        """Direction to the nearest spot within 24 m that still sees the foe and has a wall behind it (away from the foe)."""
+        fx, fy, fz = foe["pos"]
+        for r in (8, 16, 24):
+            best, bd = None, 1e9
+            for k in range(12):
+                a = k * TAU / 12
+                cx, cy = x + r * math.cos(a), y + r * math.sin(a)
+                cz = self.w.gz(cx, cy)
+                if abs(cz - z) > 6 or self.w.blocked(cx, cy, cz + 2):
+                    continue
+                bx, by = norm(cx - fx, cy - fy)
+                if self.w.wall_ahead(cx, cy, cz, bx, by, dist=5) is None:
+                    continue
+                if not self.w.los(fx, fy, fz + 8, cx, cy, cz + 6):
+                    continue
+                dd = math.hypot(cx - fx, cy - fy)
+                if abs(dd - 60) < bd:
+                    best, bd = norm(cx - x, cy - y), abs(dd - 60)
+            if best:
+                return best
         return None
 
     def loot_goal(self, obs, x, y, z, slot, weapons):
