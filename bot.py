@@ -251,7 +251,7 @@ class Bot:
             tgo = self.loot_goal(obs, x, y, z, slot, weapons)
             if tgo:
                 mv = norm(tgo[0] - x, tgo[1] - y)
-            elif self.prey and t - self.prey[2] < 15 and hpf > 0.85 and not self.heal \
+            elif self.prey and t - self.prey[2] < 15 and hpf > 0.6 and not self.heal \
                     and math.hypot(self.prey[0] - x, self.prey[1] - y) > 20:
                 # hunt: kills are the score, so go find the mech we last saw or heard
                 mv = norm(self.prey[0] - x, self.prey[1] - y)
