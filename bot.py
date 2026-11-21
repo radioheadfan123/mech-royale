@@ -250,8 +250,8 @@ class Bot:
             mv = (0.0, 0.0)  # inside the safe circle, nothing to do: stand still (silent)
 
         # ----- grab visible cubes (crate/drone/kill drops) -----
-        cbs = [c for c in obs["cubes"] if math.dist(c["pos"][:2], (x, y)) < 100]
-        if cbs and me["in_zone"] and not self.heal and (best is None or best_d > 50):
+        cbs = [c for c in obs["cubes"] if math.dist(c["pos"][:2], (x, y)) < 200]
+        if cbs and me["in_zone"] and not self.heal and (best is None or best_d > 30):
             cb = min(cbs, key=lambda c: math.dist(c["pos"][:2], (x, y)))
             mv = norm(cb["pos"][0] - x, cb["pos"][1] - y)
         # ----- supply drop: full HP + 3 cubes for holding the ring alone 4 s -----
