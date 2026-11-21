@@ -7,7 +7,7 @@ from world import Nav, World
 
 TAU = 2 * math.pi
 WANT = {"laser": 3, "lightning": 2}  # slot-1 weapons worth taking; mortar never (cook-off bait)
-PICKS = ["armor", "plating", "nanites", "gun_rate", "gun_damage", "laser_charge", "laser_damage",
+PICKS = ["gun_rate", "gun_damage", "laser_damage", "laser_charge", "armor", "plating", "nanites",
          "lightning_efficiency", "gyros", "gun_mag", "servos", "gun_velocity", "capacitor", "reactor",
          "jets", "sensors", "lightning_range", "lightning_chain", "laser_pierce"]
 LOUD = {"gun", "laser", "laser_charge", "lightning", "mortar", "step", "boost", "jet", "reload"}
@@ -130,7 +130,7 @@ class Bot:
             if s < best_s:
                 best, best_s, best_vis, best_d = m, s, vis, d
         farm = None
-        if (best is None or best_d > 120) and hpf > 0.35 and not self.heal:
+        if (best is None or best_d > 120) and hpf > 0.2 and not self.heal:
             cands = [m for m in obs["mechs"] if m["kind"] == "npc"] + [dict(c, kind="crate") for c in obs["crates"]]
             fs = 1e9
             for c in cands:
@@ -215,7 +215,7 @@ class Bot:
             ux, uy = norm(ex - x, ey - y)
             d = math.hypot(ex - x, ey - y)
             ehp = best.get("hp", 1400) / best.get("max_hp", 1400)
-            if hpf < 0.45 and ehp > 0.3:
+            if hpf < 0.6 and ehp > 0.3:
                 self.heal = True
             if self.heal and (hpf > 0.9 or ehp < 0.2):
                 self.heal = False
