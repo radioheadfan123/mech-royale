@@ -3,7 +3,7 @@ import math
 import random
 
 import mechfight as mf
-from world import World
+from world import Nav, World
 
 TAU = 2 * math.pi
 WANT = {"laser": 3, "lightning": 2}  # slot-1 weapons worth taking; mortar never (cook-off bait)
@@ -28,6 +28,7 @@ class Bot:
     def __init__(self, hello):
         self.cfg = hello["config"]
         self.w = World(hello["map"]["dir"])
+        self.nav = Nav(self.w)
         self.rng = random.Random(hello["seed"])
         self.strafe, self.flip_t = 1, 0.0
         self.threat = None          # (bearing, t, by)
@@ -200,6 +201,9 @@ class Bot:
         # ----- movement -----
         boost = False
         goal, zd, zr = self.safe_goal(obs, x, y)
+        zn = obs["zone"]
+        self.nav.target(zn["next_center"][0], zn["next_center"][1], zn["next_radius"] * 0.6)
+        self.nav.work(0.004)
         mv = (0.0, 0.0)
         if t >= self.flip_t:
             self.strafe = -self.strafe
@@ -236,7 +240,7 @@ class Bot:
         if self.heal and hpf > 0.9:
             self.heal = False
         if goal is not None:
-            gx, gy = norm(goal[0] - x, goal[1] - y)
+            gx, gy = self.nav.step(x, y) or norm(goal[0] - x, goal[1] - y)
             outside = zd > zr
             w = 1.0 if (outside or best is None) else 0.6
             mv = norm(mv[0] * (1 - w) + gx * w, mv[1] * (1 - w) + gy * w)
