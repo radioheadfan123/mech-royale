@@ -241,8 +241,13 @@ class Bot:
                 radial = max(-1.0, min(1.0, (d - want) / 25))
                 px, py = -uy * self.strafe, ux * self.strafe
                 mv = norm(px + ux * radial * 0.7, py + uy * radial * 0.7)
-                if z > self.w.gz(x, y) + 3 and self.w.gz(x + mv[0] * 4, y + mv[1] * 4) + 3 > z:
-                    mv = (0.0, 0.0)  # on a roof and the step would drop us off: hold the high ground
+                if z > self.w.gz(x, y) + 3:  # on a roof: do not strafe off the edge, hold the high ground
+                    c = self.w.cell(x + mv[0] * 4, y + mv[1] * 4)
+                    sup = self.w.ground[c] if c >= 0 else z
+                    if c >= 0 and sup < self.w.st[c] <= z + 1.5:
+                        sup = self.w.st[c]
+                    if sup < z - 3:
+                        mv = (0.0, 0.0)
                 boost = energy > 35 or dodge
         elif farm is not None:
             fx, fy = farm["pos"][0], farm["pos"][1]
