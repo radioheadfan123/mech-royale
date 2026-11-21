@@ -217,7 +217,7 @@ class Bot:
             ehp = best.get("hp", 1400) / best.get("max_hp", 1400)
             if hpf < 0.6 and ehp > 0.3:
                 self.heal = True
-            if self.heal and (hpf > 0.9 or ehp < 0.2):
+            if self.heal and (hpf > 0.75 or ehp < 0.2):
                 self.heal = False
             if self.heal:
                 mv = self.cover(x, y, z, best, goal)
