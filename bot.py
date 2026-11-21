@@ -249,6 +249,18 @@ class Bot:
         if best is None and farm is None and goal is None and mv == (0.0, 0.0):
             mv = (0.0, 0.0)  # inside the safe circle, nothing to do: stand still (silent)
 
+        # ----- supply drop: full HP + 3 cubes for holding the ring alone 4 s -----
+        dps = [d for d in obs.get("drops", []) if d.get("holder") in (None, me["id"])
+               and math.dist(d["pos"][:2], (x, y)) < 260]
+        if dps:
+            dp = min(dps, key=lambda d: math.dist(d["pos"][:2], (x, y)))
+            ddx, ddy = dp["pos"][0] - x, dp["pos"][1] - y
+            dd = math.hypot(ddx, ddy)
+            if dd > dp.get("radius", 8) - 3:
+                mv = norm(ddx, ddy)
+                boost = boost or (energy > 25 and dd > 20)
+            elif best is None:
+                mv = (0.0, 0.0)
         jump = False
         if mv != (0.0, 0.0):
             dx, dy, blocked = self.steer(x, y, z, mv[0], mv[1])
