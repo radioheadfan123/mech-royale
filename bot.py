@@ -297,7 +297,14 @@ class Bot:
                 boost = not me["grounded"]
             mv = (dx, dy)
         if aim is None:
-            aim = [math.atan2(mv[1], mv[0]) if mv != (0.0, 0.0) else me["aim"][0], 0.0]
+            if mv != (0.0, 0.0):
+                aim = [math.atan2(mv[1], mv[0]), 0.0]
+            else:
+                zc = obs["zone"]["next_center"]
+                if math.hypot(zc[0] - x, zc[1] - y) < 0.5 * obs["zone"]["next_radius"]:
+                    aim = [wrap(t * 0.7), 0.0]
+                else:
+                    aim = [wrap(math.atan2(zc[1] - y, zc[0] - x) + 0.8 * math.sin(t * 0.7)), 0.0]
         act.update(move=[mv[0], mv[1]], aim=aim, fire=fire, boost=boost, jump=jump)
         return act
 
