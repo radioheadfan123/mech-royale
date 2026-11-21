@@ -270,6 +270,10 @@ class Bot:
                 boost = boost or (energy > 25 and dd > 20)
             elif best is None:
                 mv = (0.0, 0.0)
+        if dodge:  # a laser is charging at us: break its sight before anything else
+            chg = next(m for m in enemies if m.get("charging") and abs(wrap(m["aim"][0] - math.atan2(y - m["pos"][1], x - m["pos"][0]))) < 0.15)
+            mv = self.cover_near(x, y, z, chg) or self.cover(x, y, z, chg, goal)
+            boost = True
         jump = False
         if mv != (0.0, 0.0):
             dx, dy, blocked = self.steer(x, y, z, mv[0], mv[1])
