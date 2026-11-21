@@ -185,7 +185,14 @@ class Bot:
                     aim = hit_aim
                     full = L["charge"] >= ls.get("charge", 0.75) - 0.05
                     on = err(hit_aim) < tol and self.w.los(x, y, mz, hx, hy, hz)
-                    fire[slot["laser"]] = not (full and on)
+                    # early release when the charge so far already kills (rear hits x1.5)
+                    kill = False
+                    if tgt.get("hp") is not None:
+                        mf_ = ls.get("min_frac", 0.35)
+                        frac = mf_ + (1 - mf_) * min(1.0, L["charge"] / ls.get("charge", 0.75))
+                        rear = tgt["kind"] == "mech" and abs(wrap(math.atan2(y - tgt["pos"][1], x - tgt["pos"][0]) - tgt["aim"][0])) > math.pi / 2
+                        kill = ls.get("damage", 315) * frac * (1.5 if rear else 1.0) * 0.8 >= tgt["hp"]
+                    fire[slot["laser"]] = not ((full or kill) and on)
                 elif L["cooldown"] <= 0 and d < ls.get("range", 280) * 0.95 and vis:
                     fire[slot["laser"]] = True
             if "lightning" in slot:
