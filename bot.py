@@ -215,7 +215,7 @@ class Bot:
             ux, uy = norm(ex - x, ey - y)
             d = math.hypot(ex - x, ey - y)
             ehp = best.get("hp", 1400) / best.get("max_hp", 1400)
-            if hpf < 0.45 and ehp > 0.3:
+            if (hpf < 0.45 and ehp > 0.3) or (hpf < 0.7 and sum(math.dist(m["pos"], me["pos"]) < 150 for m in enemies) >= 2):
                 self.heal = True
             if self.heal and (hpf > 0.9 or ehp < 0.2):
                 self.heal = False
