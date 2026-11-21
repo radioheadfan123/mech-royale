@@ -222,6 +222,8 @@ class Bot:
             if self.heal:
                 mv = self.cover(x, y, z, best, goal)
                 boost = True
+            elif "laser" in slot and weapons[slot["laser"]]["cooldown"] > 0.6 and not weapons[slot["laser"]].get("charge"):
+                mv = self.cover(x, y, z, best, goal)
             else:
                 want = 30 if "lightning" in slot else 70
                 radial = max(-1.0, min(1.0, (d - want) / 25))
