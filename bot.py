@@ -187,6 +187,10 @@ class Bot:
                 g = weapons[slot["gun"]]
                 if g.get("ammo", 1) > 0 and g.get("reload", 0) <= 0:
                     fire[slot["gun"]] = True
+        if self.threat and self.threat[3] and t - self.threat[1] < 1.5 and not any(m["id"] == self.threat[2] for m in enemies):
+            aim = [self.threat[0], 0.0]  # shot in the back by someone we cannot see: face them
+            if "gun" in slot:
+                fire[slot["gun"]] = False
         if aim is None:
             if self.threat and t - self.threat[1] < 3:
                 aim = [self.threat[0], 0.0]
