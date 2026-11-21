@@ -183,7 +183,7 @@ class Bot:
                 if d < ls.get("range", 45) * 0.95 and vis and energy > 12 and \
                         abs(wrap(gun_aim[0] - ay)) < math.radians(ls.get("cone_deg", 30)) * 0.4:
                     fire[slot["lightning"]] = True
-            if gun and vis and d < gun["range"] * 0.97 and err(aim) < tol:
+            if gun and vis and d < min(gun["range"] * 0.97, 160 if tgt.get("kind") == "mech" else 1e9) and err(aim) < tol:
                 g = weapons[slot["gun"]]
                 if g.get("ammo", 1) > 0 and g.get("reload", 0) <= 0:
                     fire[slot["gun"]] = True
