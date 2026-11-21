@@ -1,5 +1,9 @@
-# Stdlib-only Python bot. Match runs it with no network, read-only root, 1 CPU, 512 MB, map at /arena.
-FROM python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90
-WORKDIR /bot
-COPY mechfight.py world.py bot.py ./
-ENTRYPOINT ["python3", "-u", "/bot/bot.py"]
+FROM golang:1.26.1-bookworm@sha256:ab3d6955bbc813a0f3fdf220c1d817dd89c0b3f283777db8ece4a32fe7858edd AS build
+WORKDIR /src
+COPY giddy/go.mod ./
+COPY giddy/mech ./mech
+COPY giddy/cmd/bot ./cmd/bot
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o /mechbot ./cmd/bot
+FROM scratch
+COPY --from=build /mechbot /mechbot
+ENTRYPOINT ["/mechbot"]
