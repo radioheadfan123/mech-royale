@@ -658,7 +658,7 @@ func (b *Brain) step(o *Obs, act *Action) {
 		if losing {
 			b.loseAt = now
 		}
-		b.retreat = now-b.loseAt < 1.5 && b.loseAt > 0
+		b.retreat = now-b.loseAt < 6 && b.loseAt > 0 // ours: 6 s (was 1.5) so regen (5 s quiet) can start
 	}
 
 	exposed := false
