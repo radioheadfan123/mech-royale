@@ -7,7 +7,7 @@ from world import Nav, World
 
 TAU = 2 * math.pi
 WANT = {"laser": 3, "lightning": 2}  # slot-1 weapons worth taking; mortar never (cook-off bait)
-PICKS = ["armor", "plating", "nanites", "gun_rate", "gun_damage", "laser_charge", "laser_damage",
+PICKS = ["gun_rate", "gun_damage", "laser_damage", "laser_charge", "armor", "plating", "nanites",
          "lightning_efficiency", "gyros", "gun_mag", "servos", "gun_velocity", "capacitor", "reactor",
          "jets", "sensors", "lightning_range", "lightning_chain", "laser_pierce"]
 LOUD = {"gun", "laser", "laser_charge", "lightning", "mortar", "step", "boost", "jet", "reload"}
