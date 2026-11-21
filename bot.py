@@ -237,7 +237,7 @@ class Bot:
                 mv = self.cover(x, y, z, chg, goal)
                 boost = True
             else:
-                want = 30 if "lightning" in slot else 70
+                want = 30 if ("lightning" in slot or (ehp < 0.38 and hpf > 0.42)) else 70
                 radial = max(-1.0, min(1.0, (d - want) / 25))
                 px, py = -uy * self.strafe, ux * self.strafe
                 mv = norm(px + ux * radial * 0.7, py + uy * radial * 0.7)
