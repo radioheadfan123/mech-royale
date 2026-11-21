@@ -268,7 +268,7 @@ func (b *Brain) observe(o *Obs) {
 		}
 	}
 	for id, t := range b.npcs {
-		if now-t.Seen > 120 {
+		if now-t.Seen > 120 || (t.Seen < now && t.HP < 0.25*t.MaxHP && t.Dist < 60) {
 			delete(b.npcs, id)
 		}
 	}
