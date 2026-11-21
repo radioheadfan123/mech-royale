@@ -29,6 +29,7 @@ type known struct {
 type circle struct{ X, Y, R float64 }
 
 type Brain struct {
+	prey [3]float64 // hunt: x, y, time we last saw or heard a mech
 	W    *World
 	Cfg  Config
 	Slot int
@@ -512,6 +513,34 @@ func (b *Brain) step(o *Obs, act *Action) {
 	_, laser := hasWeapon(me.Weapons, "laser")
 	late := z.NextRadius <= 70 || o.Alive <= 3
 
+	// hunt: remember where we last saw or heard a mech
+	{
+		pd := math.Inf(1)
+		for _, t := range b.tracks {
+			if t.Seen == now && t.Dist < pd {
+				pd = t.Dist
+				b.prey = [3]float64{t.Pos[0], t.Pos[1], now}
+			}
+		}
+		if math.IsInf(pd, 1) {
+			for _, sd := range o.Sounds {
+				switch sd.Kind {
+				case "gun", "laser", "laser_charge", "lightning", "step", "boost", "jet":
+					r := 200.0
+					if sd.Dist == "near" {
+						r = 40
+					} else if sd.Dist == "mid" {
+						r = 110
+					}
+					b.prey = [3]float64{x + r*math.Cos(sd.Bearing), y + r*math.Sin(sd.Bearing), now}
+				}
+				if b.prey[2] == now {
+					break
+				}
+			}
+		}
+	}
+
 	var seen []*Track
 	var target, hidden, shy *Track
 	bestScore := math.Inf(1)
@@ -825,6 +854,11 @@ func (b *Brain) step(o *Obs, act *Action) {
 					mx, my = 0, 0
 				}
 			}
+		} else if b.pracOn && b.prey[2] > 0 && now-b.prey[2] < 15 && hpFrac > 0.85 && !danger &&
+			hyp(b.prey[0]-x, b.prey[1]-y) > 20 && b.zonePenalty(z, b.prey[0], b.prey[1]) < 150 {
+			// hunt: in practice kills are the score, so go find the mech we last saw or heard
+			mx, my = b.travel(me, b.prey[0], b.prey[1])
+			mode = "hunt"
 		} else if zdist > 3 && (!b.P.Ghost || z.NextRadius <= 30) {
 			mx, my = b.travel(me, zgx, zgy)
 			mode = "zone-walk"

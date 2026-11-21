@@ -11,3 +11,4 @@ The `giddy/` folder is giddygiddyboy's Mech Royale bot, used under its MIT Licen
 - The Dockerfile builds it with `golang:1.26.1-bookworm` pinned by digest into a `scratch` image.
 
 Every change we make on top of it is listed in this section and in the git history of `giddy/`.
+- G1 hunter (ours): in practice, when healthy and idle, walk to the mech we last saw or heard.
