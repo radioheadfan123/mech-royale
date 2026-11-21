@@ -37,6 +37,64 @@ class Bot:
         self.last_t = 0.0
         self.charging_since = None
         self.heal = False
+        self.grove_init(hello["map"]["dir"])
+
+    def grove_init(self, d):
+        # canopy cover per nav cell: crowns overlapping our body band (2-9 m up) hide us beyond near_range
+        import json, os
+        tr = json.load(open(os.path.join(d, "v2/world.json")))["trees"]
+        f, a = tr["fields"], tr["data"]
+        n = len(f)
+        ix = {k: i for i, k in enumerate(f)}
+        N = self.nav
+        self.can = bytearray(N.cx * N.cy)
+        s = self.w.step * N.G
+        for i in range(0, len(a), n):
+            r, cb, h = a[i + ix["crownR"]], a[i + ix["crownBase"]], a[i + ix["height"]]
+            if cb > 9 or h < 2 or r < 1.5:
+                continue
+            cx = a[i + ix["crownX"]] if "crownX" in ix else a[i]
+            cy = a[i + ix["crownY"]] if "crownY" in ix else a[i + 1]
+            k = int(r / s) + 1
+            i0, j0 = int((cx - self.w.x0) / s), int((cy - self.w.y0) / s)
+            for jj in range(j0 - k, j0 + k + 1):
+                for ii in range(i0 - k, i0 + k + 1):
+                    if 0 <= ii < N.cx and 0 <= jj < N.cy:
+                        gx, gy = N.center(jj * N.cx + ii)
+                        if (gx - cx) ** 2 + (gy - cy) ** 2 <= r * r:
+                            c = jj * N.cx + ii
+                            self.can[c] = min(255, self.can[c] + 1)
+        self.grove, self.grove_t = None, -9.0
+
+    def grove_goal(self, obs, x, y, t):
+        # densest canopy spot within 60 m, inside the next circle; refreshed every 3 s
+        if t - self.grove_t < 3:
+            return self.grove
+        self.grove_t = t
+        N, z = self.nav, obs["zone"]
+        cx, cy = z["next_center"]
+        r = z["next_radius"] - min(25.0, 0.35 * z["next_radius"])
+        k0 = N.idx(x, y)
+        if k0 < 0 or r < 20:
+            self.grove = None
+            return None
+        W, H, can = N.cx, N.cy, self.can
+        i0, j0 = k0 % W, k0 // W
+        best, bs = None, 0
+        for j in range(max(2, j0 - 15), min(H - 2, j0 + 16)):
+            for i in range(max(2, i0 - 15), min(W - 2, i0 + 16)):
+                k = j * W + i
+                if not N.free[k]:
+                    continue
+                gx, gy = N.center(k)
+                if (gx - cx) ** 2 + (gy - cy) ** 2 > r * r or math.hypot(gx - x, gy - y) > 60:
+                    continue
+                sc = sum(can[(j + b) * W + i + a] for a in (-2, -1, 0, 1, 2) for b in (-2, -1, 0, 1, 2))
+                sc -= math.hypot(gx - x, gy - y) * 0.05
+                if sc > bs:
+                    best, bs = (gx, gy), sc
+        self.grove = best if bs >= 6 else None
+        return self.grove
 
     # ---------- helpers ----------
     def center_z(self, m):
@@ -241,6 +299,10 @@ class Bot:
             tgo = self.loot_goal(obs, x, y, z, slot, weapons)
             if tgo:
                 mv = norm(tgo[0] - x, tgo[1] - y)
+            else:
+                gv = self.grove_goal(obs, x, y, t)
+                if gv and math.hypot(gv[0] - x, gv[1] - y) > 3:
+                    mv = norm(gv[0] - x, gv[1] - y)
         if self.heal and hpf > 0.9:
             self.heal = False
         if goal is not None:
