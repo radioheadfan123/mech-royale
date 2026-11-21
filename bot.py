@@ -6,7 +6,7 @@ import mechfight as mf
 from world import Nav, World
 
 TAU = 2 * math.pi
-WANT = {"laser": 3, "lightning": 2}  # slot-1 weapons worth taking; mortar never (cook-off bait)
+WANT = {"laser": 3, "lightning": 2, "mortar": 1}  # slot-1 weapons; mortar only until a laser turns up
 PICKS = ["armor", "plating", "nanites", "gun_rate", "gun_damage", "laser_charge", "laser_damage",
          "lightning_efficiency", "gyros", "gun_mag", "servos", "gun_velocity", "capacitor", "reactor",
          "jets", "sensors", "lightning_range", "lightning_chain", "laser_pierce"]
@@ -193,6 +193,28 @@ class Bot:
                 if d < ls.get("range", 45) * 0.95 and vis and energy > 12 and \
                         abs(wrap(gun_aim[0] - ay)) < math.radians(ls.get("cone_deg", 30)) * 0.4:
                     fire[slot["lightning"]] = True
+            if "mortar" in slot and weapons[slot["mortar"]].get("cooldown", 0) <= 0:
+                ms = weapons[slot["mortar"]]["stats"]
+                v, g = ms.get("speed", 72), ms.get("gravity", 22)
+                px, py = tgt["pos"][0], tgt["pos"][1]
+                vx, vy = (tgt.get("vel") or [0, 0])[:2]
+                h = tgt["pos"][2] + 1.0 - (z + 9.5)  # shell leaves the tube at pos.z + 9.5
+                lob, ft, R = None, 0.0, 0.0
+                for _ in range(3):  # low-arc solution, led by the flight time
+                    ax, ay = px + vx * ft, py + vy * ft
+                    R = math.hypot(ax - x, ay - y)
+                    a = g * R * R / (2 * v * v)
+                    disc = R * R - 4 * a * (h + a)
+                    if R < 1 or disc < 0:
+                        lob = None
+                        break
+                    th = math.atan((R - math.sqrt(disc)) / (2 * a))
+                    ft = R / (v * math.cos(th))
+                    lob = [math.atan2(ay - y, ax - x), th]
+                if lob and 18 < R < 200:
+                    aim = lob
+                    if math.hypot(wrap(lob[0] - ay), lob[1] - ap) < 0.03:
+                        fire[slot["mortar"]] = True
             if gun and vis and d < gun["range"] * 0.97 and err(aim) < tol:
                 g = weapons[slot["gun"]]
                 if g.get("ammo", 1) > 0 and g.get("reload", 0) <= 0:
