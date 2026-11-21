@@ -194,6 +194,8 @@ class Bot:
                 snd = [s for s in obs["sounds"] if s["kind"] in LOUD and s["dist"] != "far"]
                 if snd:
                     aim = [snd[0]["bearing"], 0.0]
+                else:
+                    aim = [wrap(me["aim"][0] + 0.35), 0.0]  # sweep the 120 deg view wedge around
         g = weapons[slot["gun"]] if "gun" in slot else None
         if g and best is None and g.get("reload", 0) <= 0 and g.get("ammo", 99) < g["stats"]["mag"] * 0.6:
             act["reload"] = True
