@@ -37,6 +37,7 @@ class Bot:
         self.last_t = 0.0
         self.charging_since = None
         self.heal = False
+        self.prey = None            # (x, y, t) last place we saw or heard a mech
 
     # ---------- helpers ----------
     def center_z(self, m):
@@ -121,6 +122,15 @@ class Bot:
 
         # ----- pick a target -----
         enemies = [m for m in obs["mechs"] if m["kind"] == "mech"]
+        if enemies:
+            m0 = min(enemies, key=lambda m: math.dist(m["pos"], me["pos"]))
+            self.prey = (m0["pos"][0], m0["pos"][1], t)
+        else:
+            for sd in obs["sounds"]:
+                if sd["kind"] in ("gun", "laser", "laser_charge", "lightning", "step", "boost", "jet"):
+                    r = {"near": 40, "mid": 110}.get(sd["dist"], 200)
+                    self.prey = (x + r * math.cos(sd["bearing"]), y + r * math.sin(sd["bearing"]), t)
+                    break
         threat_id = self.threat[2] if self.threat and t - self.threat[1] < 4 else None
         best, best_s = None, 1e9
         for m in enemies:
@@ -241,6 +251,10 @@ class Bot:
             tgo = self.loot_goal(obs, x, y, z, slot, weapons)
             if tgo:
                 mv = norm(tgo[0] - x, tgo[1] - y)
+            elif self.prey and t - self.prey[2] < 15 and hpf > 0.85 and not self.heal \
+                    and math.hypot(self.prey[0] - x, self.prey[1] - y) > 20:
+                # hunt: kills are the score, so go find the mech we last saw or heard
+                mv = norm(self.prey[0] - x, self.prey[1] - y)
         if self.heal and hpf > 0.9:
             self.heal = False
         if goal is not None:
