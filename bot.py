@@ -29,7 +29,7 @@ class Bot:
         self.cfg = hello["config"]
         self.w = World(hello["map"]["dir"])
         self.nav = Nav(self.w)
-        self.rng = random.Random(hello["seed"])
+        self.rng = random.Random(hello["seed"] + 2)
         self.strafe, self.flip_t = 1, 0.0
         self.threat = None          # (bearing, t, by)
         self.stuck_t, self.climb_until = 0.0, -1.0
