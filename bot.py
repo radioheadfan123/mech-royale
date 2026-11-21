@@ -287,6 +287,12 @@ class Bot:
         jump = False
         if mv != (0.0, 0.0):
             dx, dy, blocked = self.steer(x, y, z, mv[0], mv[1])
+            # roofs: out of a fight with energy to spare, go over a building instead of around it
+            if best is None and energy > 60 and not self.heal and \
+                    self.w.wall_ahead(x, y, z, mv[0], mv[1]) is not None and \
+                    self.w.wall_top(x, y, z, mv[0], mv[1]) - z < 50:
+                self.climb_until = max(self.climb_until, t + 2.5)
+                dx, dy = mv
             hs = math.hypot(me["vel"][0], me["vel"][1])
             self.stuck_t = self.stuck_t + dt if hs < 2.0 else 0.0
             if blocked or self.stuck_t > 0.6:
