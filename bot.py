@@ -130,12 +130,12 @@ class Bot:
             if s < best_s:
                 best, best_s, best_vis, best_d = m, s, vis, d
         farm = None
-        if best is None and hpf > 0.5 and not self.heal:
+        if (best is None or best_d > 120) and hpf > 0.35 and not self.heal:
             cands = [m for m in obs["mechs"] if m["kind"] == "npc"] + [dict(c, kind="crate") for c in obs["crates"]]
             fs = 1e9
             for c in cands:
                 d = math.dist(c["pos"], me["pos"])
-                if d > 110:
+                if d > 220:
                     continue
                 cz = c["pos"][2] + (1.2 if c["kind"] == "crate" else 1.75)
                 if self.w.los(x, y, mz, c["pos"][0], c["pos"][1], cz) and d < fs:
@@ -144,7 +144,7 @@ class Bot:
         # ----- aim -----
         fire = [False, False]
         aim = None
-        tgt = best if best is not None else farm
+        tgt = farm if farm is not None else best
         if tgt is not None:
             gun = weapons[slot["gun"]]["stats"] if "gun" in slot else None
             if tgt.get("kind") == "crate":
@@ -210,7 +210,7 @@ class Bot:
             self.flip_t = t + self.rng.uniform(0.6, 1.6)
         dodge = any(m.get("charging") and abs(wrap(m["aim"][0] - math.atan2(y - m["pos"][1], x - m["pos"][0]))) < 0.15
                     for m in enemies)
-        if best is not None:
+        if best is not None and farm is None:
             ex, ey = best["pos"][0], best["pos"][1]
             ux, uy = norm(ex - x, ey - y)
             d = math.hypot(ex - x, ey - y)
