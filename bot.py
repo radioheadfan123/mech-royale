@@ -260,7 +260,7 @@ class Bot:
             mv = norm(cb["pos"][0] - x, cb["pos"][1] - y)
         # ----- supply drop: full HP + 3 cubes for holding the ring alone 4 s -----
         dps = [d for d in obs.get("drops", []) if d.get("holder") in (None, me["id"])
-               and math.dist(d["pos"][:2], (x, y)) < 260]
+               and math.dist(d["pos"][:2], (x, y)) < 500]
         if dps:
             dp = min(dps, key=lambda d: math.dist(d["pos"][:2], (x, y)))
             ddx, ddy = dp["pos"][0] - x, dp["pos"][1] - y
