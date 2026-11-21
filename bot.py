@@ -332,7 +332,7 @@ class Bot:
         for p in obs["pickups"]:
             if p["kind"] in WANT and p["kind"] not in slot and WANT[p["kind"]] > cur:
                 d = math.dist(p["pos"][:2], (x, y))
-                if d < 120 and d < bd:
+                if d < (240 if p["kind"] == "laser" else 120) and d < bd:
                     best, bd = p["pos"], d
         for c in obs["cubes"]:
             d = math.dist(c["pos"][:2], (x, y))
