@@ -255,6 +255,9 @@ class Bot:
                     and math.hypot(self.prey[0] - x, self.prey[1] - y) > 20:
                 # hunt: kills are the score, so go find the mech we last saw or heard
                 mv = norm(self.prey[0] - x, self.prey[1] - y)
+            elif hpf > 0.85 and not self.heal and math.hypot(zn["next_center"][0] - x, zn["next_center"][1] - y) > 30:
+                # nothing known: patrol to the next zone center, where the house bots end up
+                mv = norm(zn["next_center"][0] - x, zn["next_center"][1] - y)
         if self.heal and hpf > 0.9:
             self.heal = False
         if goal is not None:
