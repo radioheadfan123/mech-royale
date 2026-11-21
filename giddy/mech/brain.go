@@ -781,6 +781,9 @@ func (b *Brain) step(o *Obs, act *Action) {
 			}
 			var bc *Vec3
 			for _, c := range b.cubes {
+				if c.Pos[2]-b.W.GroundAt(c.Pos[0], c.Pos[1]) > 3.2 { // ours: skip roof cubes we cannot reach mid-fight
+					continue
+				}
 				if d := hyp(c.Pos[0]-x, c.Pos[1]-y); d < r {
 					r = d
 					cp := c.Pos
