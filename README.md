@@ -11,3 +11,4 @@ The `giddy/` folder is giddygiddyboy's Mech Royale bot, used under its MIT Licen
 - The Dockerfile builds it with `golang:1.26.1-bookworm` pinned by digest into a `scratch` image.
 
 Every change we make on top of it is listed in this section and in the git history of `giddy/`.
+- G15 faster fight strafe (ours): reverse the strafe every 0.25-0.7 s instead of 0.3-1.0 s (idea from Th3r0n's notes, our code).

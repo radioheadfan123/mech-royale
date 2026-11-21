@@ -1387,7 +1387,7 @@ func (b *Brain) fightMove(o *Obs, tg *Track, seen []*Track, wantLos float64) (fl
 		if b.rng.Float64() < 0.6 {
 			b.strafe = -b.strafe
 		}
-		b.strafeUntil = b.now + 0.3 + b.rng.Float64()*0.7
+		b.strafeUntil = b.now + 0.25 + b.rng.Float64()*0.45 // ours: faster jink (was 0.3-1.0 s)
 	}
 	sx, sy := -uy*b.strafe, ux*b.strafe
 	tc := b.center(tg)
