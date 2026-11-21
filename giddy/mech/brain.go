@@ -1962,7 +1962,7 @@ func squadParams(p Params) Params {
 	p.MaxTarget = 240
 	p.LoseRule = true
 	p.FightLoot = 70
-	p.FarmHP = 0.5
+	p.FarmHP = 0.7 // ours: farm drones only above 70% HP (was 50%)
 
 	p.LaserSeek = 240
 	p.LaserUp = true
