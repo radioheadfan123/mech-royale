@@ -239,6 +239,11 @@ class Bot:
             else:
                 want = 30 if "lightning" in slot else 70
                 radial = max(-1.0, min(1.0, (d - want) / 25))
+                # flank: if it is not aiming at us, keep circling toward its back (rear hits x1.5)
+                rel = wrap(math.atan2(y - ey, x - ex) - best["aim"][0])
+                if abs(rel) > 0.4:
+                    self.strafe = -1 if rel > 0 else 1
+                    self.flip_t = t + 0.6
                 px, py = -uy * self.strafe, ux * self.strafe
                 mv = norm(px + ux * radial * 0.7, py + uy * radial * 0.7)
                 boost = energy > 35 or dodge
