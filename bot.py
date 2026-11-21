@@ -226,6 +226,8 @@ class Bot:
                 chg = next(m for m in enemies if m.get("charging") and abs(wrap(m["aim"][0] - math.atan2(y - m["pos"][1], x - m["pos"][0]))) < 0.15)
                 mv = self.cover(x, y, z, chg, goal)
                 boost = True
+            elif "laser" in slot and weapons[slot["laser"]]["cooldown"] > 0.6 and not weapons[slot["laser"]].get("charge"):
+                mv = self.cover(x, y, z, best, goal)
             else:
                 want = 30 if "lightning" in slot else 70
                 radial = max(-1.0, min(1.0, (d - want) / 25))
