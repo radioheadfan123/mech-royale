@@ -138,7 +138,7 @@ class Bot:
                 if d > 220:
                     continue
                 cz = c["pos"][2] + (1.2 if c["kind"] == "crate" else 1.75)
-                if self.w.los(x, y, mz, c["pos"][0], c["pos"][1], cz) and d < fs:
+                if d < fs:
                     farm, fs = c, d
 
         # ----- aim -----
