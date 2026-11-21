@@ -329,8 +329,10 @@ func (b *Brain) observe(o *Obs) {
 	} else {
 		b.otherDead = 0
 	}
-	if b.otherDead >= 5 {
+	if b.otherDead >= 5 && !b.notPractice {
 		b.notPractice = true
+		b.base = ffaParams(b.base) // ours: free-for-all tuning, see ffa.go
+		b.P = b.base
 	}
 	if on := b.base.Practice && !b.notPractice && now > 20; on != b.pracOn {
 		b.pracOn = on
