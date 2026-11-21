@@ -332,7 +332,8 @@ func (b *Brain) observe(o *Obs) {
 	if b.otherDead >= 5 {
 		b.notPractice = true
 	}
-	if on := b.base.Practice && !b.notPractice && now > 20; on != b.pracOn {
+	// ours: from 265 s (next circle about 70 m) play the cautious base params to the end
+	if on := b.base.Practice && !b.notPractice && now > 20 && now < 265; on != b.pracOn {
 		b.pracOn = on
 		b.P = b.base
 		if on {
