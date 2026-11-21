@@ -215,9 +215,9 @@ class Bot:
             ux, uy = norm(ex - x, ey - y)
             d = math.hypot(ex - x, ey - y)
             ehp = best.get("hp", 1400) / best.get("max_hp", 1400)
-            if hpf < 0.45 and ehp > 0.3:
+            if hpf < (0.75 if t > 325 else 0.45) and ehp > 0.3:
                 self.heal = True
-            if self.heal and (hpf > 0.9 or ehp < 0.2):
+            if self.heal and (hpf > (0.98 if t > 325 else 0.9) or ehp < 0.2):
                 self.heal = False
             if self.heal:
                 mv = self.cover(x, y, z, best, goal)
@@ -241,7 +241,7 @@ class Bot:
             tgo = self.loot_goal(obs, x, y, z, slot, weapons)
             if tgo:
                 mv = norm(tgo[0] - x, tgo[1] - y)
-        if self.heal and hpf > 0.9:
+        if self.heal and hpf > (0.98 if t > 325 else 0.9):
             self.heal = False
         if goal is not None:
             gx, gy = self.nav.step(x, y) or norm(goal[0] - x, goal[1] - y)
