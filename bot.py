@@ -222,6 +222,10 @@ class Bot:
             if self.heal:
                 mv = self.cover(x, y, z, best, goal)
                 boost = True
+            elif dodge:
+                chg = next(m for m in enemies if m.get("charging") and abs(wrap(m["aim"][0] - math.atan2(y - m["pos"][1], x - m["pos"][0]))) < 0.15)
+                mv = self.cover(x, y, z, chg, goal)
+                boost = True
             else:
                 want = 30 if "lightning" in slot else 70
                 radial = max(-1.0, min(1.0, (d - want) / 25))
