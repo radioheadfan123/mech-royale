@@ -211,7 +211,7 @@ class Bot:
                     th = math.atan((R - math.sqrt(disc)) / (2 * a))
                     ft = R / (v * math.cos(th))
                     lob = [math.atan2(ay - y, ax - x), th]
-                if lob and 18 < R < 200:
+                if lob and 18 < R < 200 and lob[1] < self.cfg.get("mech", {}).get("max_pitch", 0.6) - 0.01:
                     aim = lob
                     if math.hypot(wrap(lob[0] - ay), lob[1] - ap) < 0.03:
                         fire[slot["mortar"]] = True
