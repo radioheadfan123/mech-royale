@@ -6,7 +6,7 @@ import mechfight as mf
 from world import Nav, World
 
 TAU = 2 * math.pi
-WANT = {"laser": 3, "lightning": 2}  # slot-1 weapons worth taking; mortar never (cook-off bait)
+WANT = {"laser": 2, "lightning": 3}  # slot-1 weapons worth taking; mortar never (cook-off bait)
 PICKS = ["armor", "plating", "nanites", "gun_rate", "gun_damage", "laser_charge", "laser_damage",
          "lightning_efficiency", "gyros", "gun_mag", "servos", "gun_velocity", "capacitor", "reactor",
          "jets", "sensors", "lightning_range", "lightning_chain", "laser_pierce"]
@@ -226,6 +226,12 @@ class Bot:
                 chg = next(m for m in enemies if m.get("charging") and abs(wrap(m["aim"][0] - math.atan2(y - m["pos"][1], x - m["pos"][0]))) < 0.15)
                 mv = self.cover(x, y, z, chg, goal)
                 boost = True
+            elif "lightning" in slot and d > 45:
+                if self.w.los(ex, ey, best["pos"][2] + 8, x, y, z + 6):
+                    mv = self.cover(x, y, z, best, goal)
+                    boost = energy > 50
+                else:
+                    mv = (0.0, 0.0)  # hidden: wait for it to walk into arc range
             else:
                 want = 30 if "lightning" in slot else 70
                 radial = max(-1.0, min(1.0, (d - want) / 25))
