@@ -135,7 +135,7 @@ class Bot:
             fs = 1e9
             for c in cands:
                 d = math.dist(c["pos"], me["pos"])
-                if d > 220:
+                if d > 350:
                     continue
                 cz = c["pos"][2] + (1.2 if c["kind"] == "crate" else 1.75)
                 if self.w.los(x, y, mz, c["pos"][0], c["pos"][1], cz) and d < fs:
