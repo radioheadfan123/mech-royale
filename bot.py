@@ -126,7 +126,7 @@ class Bot:
         for m in enemies:
             d = math.dist(m["pos"], me["pos"])
             vis = self.w.los(x, y, mz, m["pos"][0], m["pos"][1], self.center_z(m))
-            s = d + m.get("hp", 1400) / 20 - (60 if m["id"] == threat_id else 0) + (0 if vis else 150)
+            s = d + m.get("hp", 1400) / 20 - (60 if m["id"] == threat_id else 0) - (80 if abs(wrap(m["aim"][0] - math.atan2(y - m["pos"][1], x - m["pos"][0]))) > 1.7 else 0) + (0 if vis else 150)
             if s < best_s:
                 best, best_s, best_vis, best_d = m, s, vis, d
         farm = None
