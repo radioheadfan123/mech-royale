@@ -202,7 +202,7 @@ class Bot:
         boost = False
         goal, zd, zr = self.safe_goal(obs, x, y)
         zn = obs["zone"]
-        self.nav.target(zn["next_center"][0], zn["next_center"][1], zn["next_radius"] * 0.6)
+        self.nav.target(zn["next_center"][0], zn["next_center"][1], zn["next_radius"] * 0.35)
         self.nav.work(0.004)
         mv = (0.0, 0.0)
         if t >= self.flip_t:
