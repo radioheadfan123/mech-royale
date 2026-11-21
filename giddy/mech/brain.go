@@ -1961,7 +1961,7 @@ func squadParams(p Params) Params {
 	p.LowBonus = 100
 	p.MaxTarget = 240
 	p.LoseRule = true
-	p.FightLoot = 70
+	p.FightLoot = 110 // ours: grab cubes mid-fight out to 110 m (was 70)
 	p.FarmHP = 0.5
 
 	p.LaserSeek = 240
