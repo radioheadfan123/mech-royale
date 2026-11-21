@@ -1202,6 +1202,10 @@ func (b *Brain) lead(muzzle, tp, tv Vec3, speed float64, grounded bool) (float64
 	if speed <= 0 {
 		speed = 252
 	}
+	if b.pracOn {
+		// house bots strafe, so a full lead overshoots; aim 80% of it
+		tv = Vec3{tv[0] * 0.8, tv[1] * 0.8, tv[2] * 0.8}
+	}
 	t := 0.0
 	var px, py, pz float64
 	for k := 0; k < 4; k++ {
