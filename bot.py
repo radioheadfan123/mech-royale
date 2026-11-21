@@ -264,7 +264,7 @@ class Bot:
             if dd > dp.get("radius", 8) - 3:
                 mv = norm(ddx, ddy)
                 boost = boost or (energy > 25 and dd > 20)
-            elif best is None:
+            else:
                 mv = (0.0, 0.0)
         jump = False
         if mv != (0.0, 0.0):
