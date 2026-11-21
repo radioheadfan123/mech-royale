@@ -255,6 +255,10 @@ class Bot:
                     and math.hypot(self.prey[0] - x, self.prey[1] - y) > 20:
                 # hunt: kills are the score, so go find the mech we last saw or heard
                 mv = norm(self.prey[0] - x, self.prey[1] - y)
+            elif hpf > 0.6 and not self.heal and z < self.w.gz(x, y) + 3:
+                roof = self.roof_near(x, y, z, zn)
+                if roof:  # high ground: see and shoot over the squad
+                    mv = norm(roof[0] - x, roof[1] - y)
         if self.heal and hpf > 0.9:
             self.heal = False
         if goal is not None:
@@ -325,6 +329,20 @@ class Bot:
             if s > bs:
                 bs, best = s, norm(cx - x, cy - y)
         return best
+
+    def roof_near(self, x, y, z, zn):
+        cx, cy = zn["next_center"]
+        rr = zn["next_radius"] * 0.8
+        w = self.w
+        for r in (12, 24, 36, 48):
+            for k in range(16):
+                a = k * TAU / 16
+                px, py = x + r * math.cos(a), y + r * math.sin(a)
+                c = w.cell(px, py)
+                if c >= 0 and w.st[c] > w.ground[c] + 5 and w.st[c] - z < 50 and \
+                        math.hypot(px - cx, py - cy) < rr:
+                    return px, py
+        return None
 
     def loot_goal(self, obs, x, y, z, slot, weapons):
         cur = WANT.get(weapons[1]["kind"], 0) if weapons[1] else -1
