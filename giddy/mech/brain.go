@@ -491,7 +491,7 @@ var upgradeOrder = []string{
 }
 
 var upgradeOrderLaser = []string{
-	"plating", "armor", "laser_damage", "laser_charge", "nanites", "gun_damage", "gun_rate", "lightning_efficiency", "lightning_range",
+	"laser_damage", "plating", "armor", "laser_charge", "nanites", "gun_damage", "gun_rate", "lightning_efficiency", "lightning_range",
 	"servos", "gun_mag", "gun_velocity", "gyros", "lightning_chain", "reactor", "capacitor",
 	"mortar_reload", "mortar_splash", "mortar_velocity", "sensors", "jets", "laser_pierce",
 }
