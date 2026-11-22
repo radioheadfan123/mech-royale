@@ -12,6 +12,7 @@ type Track struct {
 	MechSeen
 	Seen    float64
 	HitMe   float64
+	RearMe  float64 // ours: last rear hit on us from this mech
 	Dist    float64
 	LOS     bool
 	Closing float64
@@ -249,7 +250,7 @@ func (b *Brain) observe(o *Obs) {
 		}
 		t := tab[m.ID]
 		if t == nil {
-			t = &Track{HitMe: -100}
+			t = &Track{HitMe: -100, RearMe: -100}
 			tab[m.ID] = t
 		}
 		t.MechSeen = *m
@@ -313,6 +314,9 @@ func (b *Brain) observe(o *Obs) {
 				}
 				if t := b.tracks[*e.By]; t != nil {
 					t.HitMe = now
+					if e.Rear {
+						t.RearMe = now
+					}
 				}
 				if n := b.npcs[*e.By]; n != nil {
 					n.HitMe = now
@@ -568,6 +572,10 @@ func (b *Brain) step(o *Obs, act *Action) {
 	if b.P.HPw > 0 {
 		hpw = b.P.HPw
 	}
+	rearOK := true // ours: rh1, no rear retarget while finishing the stuck target
+	if st := b.tracks[b.stickID]; st != nil && now-b.stickAt < 2 && st.HP <= 0.3*st.MaxHP {
+		rearOK = false
+	}
 	for _, t := range b.tracks {
 		if now-t.Seen > 2.5 {
 			continue
@@ -638,6 +646,9 @@ func (b *Brain) step(o *Obs, act *Action) {
 		}
 		if now-t.HitMe < 4 {
 			s -= 40
+		}
+		if b.pracOn && now-t.RearMe < 2 && rearOK { // ours: turn on whoever is hitting our back (x1.5 damage)
+			s -= 300
 		}
 		if t.Closing > 3 {
 			s -= 15
