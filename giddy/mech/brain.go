@@ -1793,9 +1793,11 @@ func (b *Brain) chooseLoot(o *Obs, hpFrac float64, danger bool) *lootChoice {
 	cubeV := 75.0
 	if me.Cubes >= b.cubeCap() {
 		cubeV = 25
+	} else if b.pracOn && !danger {
+		cubeV = 100 // ours: practice, cubes beat crates (105*0.6) once safe
 	}
 	for _, c := range b.cubes {
-		if hyp(c.Pos[0]-x, c.Pos[1]-y) < math.Max(60, b.P.LootRadius*0.7) {
+		if hyp(c.Pos[0]-x, c.Pos[1]-y) < math.Max(60, b.P.LootRadius*0.7) || (b.pracOn && !danger && hyp(c.Pos[0]-x, c.Pos[1]-y) < b.P.LootRadius) {
 			consider("cube", c.ID, c.Pos, cubeV)
 		}
 	}
@@ -2040,7 +2042,7 @@ func squadParams(p Params) Params {
 	p.MaxTarget = 240
 	p.LoseRule = true
 	p.FightLoot = 70
-	p.CubeHunt = 200
+	p.CubeHunt = 300
 	p.FarmHP = 0.5
 
 	p.LaserSeek = 240
