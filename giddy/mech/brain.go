@@ -1970,7 +1970,7 @@ func squadParams(p Params) Params {
 	p.Finish = 20
 	p.Stick = 200
 	p.LowBonus = 200
-	p.LethalK = 0.7
+	p.LethalK = 0.85 // ours: G20
 	p.HPw = 0.15
 	p.HPw = 0.18
 
