@@ -658,7 +658,15 @@ func (b *Brain) step(o *Obs, act *Action) {
 		if losing {
 			b.loseAt = now
 		}
-		b.retreat = b.loseAt > 0 && (now-b.loseAt < 6 || (now-b.loseAt < 20 && hpFrac < 0.7)) // ours: 6 s (was 1.5), and up to 20 s while under 70% HP, so regen can heal us
+		hunterNear := false
+		for _, t := range seen {
+			if t.Seen == now && t.Dist < 60 {
+				hunterNear = true
+			}
+		}
+		// ours (rg1): 6 s (was 1.5), then stay in cover until regen gets us past RecoverHP, unless a hunter is inside 60 m.
+		// ponytail: 30 s cap so a slow heal cannot park us forever; tune if logs show it binding.
+		b.retreat = b.loseAt > 0 && (now-b.loseAt < 6 || (now-b.loseAt < 30 && hpFrac < b.P.RecoverHP && !hunterNear))
 	}
 
 	exposed := false
