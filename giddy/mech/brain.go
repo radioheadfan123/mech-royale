@@ -92,6 +92,8 @@ type Brain struct {
 	npcHurt            float64
 	npcBearing         float64
 	notPractice        bool
+	seed0              int64 // ours: RNG seed, for the per-match salt patch (patch.go)
+	patched            bool
 	startAlive, kills  int
 	otherDead          int
 	deaths             []known // ours: where mechs died (cube piles), for CubeHunt
@@ -174,7 +176,7 @@ func NewBrain(h *Hello, w *World) *Brain {
 		seed = int64(h.Slot) + 1
 	}
 	return &Brain{
-		W: w, Cfg: h.Config, Slot: h.Slot, rng: rand.New(rand.NewSource(seed)), P: DefaultParams(),
+		W: w, Cfg: h.Config, Slot: h.Slot, rng: rand.New(rand.NewSource(seed)), P: DefaultParams(), seed0: seed,
 		tracks: map[int]*Track{}, npcs: map[int]*Track{}, crates: map[int]*known{}, cubes: map[int]*known{},
 		pickups: map[int]*known{}, bad: map[int]float64{}, strafe: 1, lootID: -1, lastHurt: -100, lastThreatAt: -100,
 		holdStart: -1,
@@ -197,6 +199,12 @@ func clamp(v, lo, hi float64) float64 { return math.Max(lo, math.Min(hi, v)) }
 
 func (b *Brain) Act(o *Obs) (act Action) {
 	act.Tick = o.Tick
+	if !b.patched { // ours: per-match salt patch, see patch.go
+		b.patched = true
+		if salt := saltPatch[matchGroup(b.Slot, &o.Zone)]; salt != 0 {
+			b.rng = rand.New(rand.NewSource(b.seed0 + salt))
+		}
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			b.Panics++
