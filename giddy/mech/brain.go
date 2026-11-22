@@ -94,6 +94,7 @@ type Brain struct {
 	notPractice        bool
 	startAlive, kills  int
 	otherDead          int
+	deaths             []known // ours: where mechs died (cube piles), for CubeHunt
 	stickID            int
 	stickAt, loseAt    float64
 }
@@ -152,6 +153,8 @@ type Params struct {
 	SpeedUp     bool
 	Backstab    float64
 	LethalK     float64
+	CubeHunt    float64 // ours: FFA only, walk this far to where a mech died to collect its cubes
+	HoldDrop    bool    // ours: FFA only, stand still in a landed supply drop ring while the capture runs
 	Bank        float64 // ours: FFA only, hold fire and cover once the next circle is this small, see ffa.go
 }
 
@@ -317,7 +320,35 @@ func (b *Brain) observe(o *Obs) {
 			}
 		case "kill":
 			b.kills++
+			if t := b.tracks[e.Target]; t != nil && b.P.CubeHunt > 0 {
+				b.deaths = append(b.deaths, known{ID: 90000 + len(b.deaths), Pos: t.Pos, Seen: now})
+			}
 			delete(b.tracks, e.Target)
+		}
+	}
+
+	if b.P.CubeHunt > 0 { // ours: a death sound on the bearing of a tracked mech marks its cube pile
+		for _, snd := range o.Sounds {
+			if snd.Kind != "death" || snd.Age > 0.2 {
+				continue
+			}
+			var dead *Track
+			for _, t := range b.tracks {
+				br := math.Atan2(t.Pos[1]-o.Self.Pos[1], t.Pos[0]-o.Self.Pos[0])
+				if now-t.Seen < 3 && math.Abs(angDiff(br, snd.Bearing)) < 0.3 && (dead == nil || t.HP < dead.HP) {
+					dead = t
+				}
+			}
+			if dead == nil {
+				continue
+			}
+			dup := false
+			for _, d := range b.deaths {
+				dup = dup || hyp(d.Pos[0]-dead.Pos[0], d.Pos[1]-dead.Pos[1]) < 15
+			}
+			if !dup {
+				b.deaths = append(b.deaths, known{ID: 90000 + len(b.deaths), Pos: dead.Pos, Seen: now})
+			}
 		}
 	}
 
@@ -422,6 +453,17 @@ func (b *Brain) zoneGoal(z *Zone, x, y float64) (float64, float64) {
 		return x, y
 	}
 	return z.NextCenter[0] + dx/d*r, z.NextCenter[1] + dy/d*r
+}
+
+// ours: inside a landed drop ring that is ours to capture (nobody else's clock running), with HP to spare.
+func (b *Brain) inDrop(o *Obs, hpFrac float64) bool {
+	for _, d := range o.Drops {
+		mine := d.Holder == nil || *d.Holder == o.Self.ID
+		if d.LandsIn <= 0 && mine && hpFrac > 0.3 && hyp(d.Pos[0]-o.Self.Pos[0], d.Pos[1]-o.Self.Pos[1]) < d.Radius-1.5 {
+			return true
+		}
+	}
+	return false
 }
 
 func hasWeapon(ws []*WeaponState, kind string) (int, *WeaponState) {
@@ -703,6 +745,8 @@ func (b *Brain) step(o *Obs, act *Action) {
 	case b.dodgeShell(o, &mx, &my):
 		boost = me.Energy > 15
 		mode = "dodge"
+	case b.P.HoldDrop && b.inDrop(o, hpFrac): // ours
+		mode = "drop-hold"
 	case zoneMust && zdist > 2:
 		mx, my = b.travel(me, zgx, zgy)
 		boost = (!me.InZone || now+tNeed >= deadline) && me.Energy > 5
@@ -1738,6 +1782,14 @@ func (b *Brain) chooseLoot(o *Obs, hpFrac float64, danger bool) *lootChoice {
 	for _, c := range b.cubes {
 		if hyp(c.Pos[0]-x, c.Pos[1]-y) < math.Max(60, b.P.LootRadius*0.7) {
 			consider("cube", c.ID, c.Pos, cubeV)
+		}
+	}
+	for i := range b.deaths { // ours: CubeHunt, walk to a cube pile until the cubes themselves are in view
+		d := &b.deaths[i]
+		if dd := hyp(d.Pos[0]-x, d.Pos[1]-y); dd < 8 {
+			d.Seen = -100
+		} else if now-d.Seen < 40 && dd < b.P.CubeHunt && hpFrac > 0.5 && !danger {
+			consider("cube", d.ID, d.Pos, 150)
 		}
 	}
 	farmHP := 0.7
