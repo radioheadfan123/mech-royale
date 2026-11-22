@@ -152,6 +152,7 @@ type Params struct {
 	SpeedUp     bool
 	Backstab    float64
 	LethalK     float64
+	Bank        float64 // ours: FFA only, hold fire and cover once the next circle is this small, see ffa.go
 }
 
 func DefaultParams() Params {
@@ -513,6 +514,7 @@ func (b *Brain) step(o *Obs, act *Action) {
 	_, light := hasWeapon(me.Weapons, "lightning")
 	_, laser := hasWeapon(me.Weapons, "laser")
 	late := z.NextRadius <= 70 || o.Alive <= 3
+	bank := b.P.Bank > 0 && z.NextRadius <= b.P.Bank && o.Alive > 2 // ours
 
 	var seen []*Track
 	var target, hidden, shy *Track
@@ -561,6 +563,9 @@ func (b *Brain) step(o *Obs, act *Action) {
 			}
 			if b.P.Odds > 0 && !t.Engage && t.LOS && hpFrac > 0.5 && t.Dist < b.reach(me) && b.odds(me, t, now, true) >= b.P.Odds {
 				t.Engage = true
+			}
+			if bank && now-t.HitMe >= 4 && t.Dist >= 25 && t.HP >= 200 { // ours: bank HP, regen needs 5 s without dealing damage
+				t.Engage = false
 			}
 		case b.P.AllFoes && t.Dist < maxT:
 			t.Engage = true
@@ -827,7 +832,7 @@ func (b *Brain) step(o *Obs, act *Action) {
 					mx, my = 0, 0
 				}
 			}
-		} else if zdist > 3 && (!b.P.Ghost || z.NextRadius <= 30) {
+		} else if zdist > 3 && (!b.P.Ghost || (z.NextRadius <= 30 && !bank)) {
 			mx, my = b.travel(me, zgx, zgy)
 			mode = "zone-walk"
 		} else if b.P.Ghost {
