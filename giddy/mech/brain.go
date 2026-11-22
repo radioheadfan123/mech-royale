@@ -94,6 +94,7 @@ type Brain struct {
 	notPractice        bool
 	startAlive, kills  int
 	otherDead          int
+	sawFight           bool // ours
 	deaths             []known // ours: where mechs died (cube piles), for CubeHunt
 	stickID            int
 	stickAt, loseAt    float64
@@ -363,12 +364,18 @@ func (b *Brain) observe(o *Obs) {
 	} else {
 		b.otherDead = 0
 	}
-	if earlyFFA && !b.notPractice && b.othersFighting(o) { // ours: two other mechs shooting each other means no squad
-		b.otherDead = 5
+	if earlyFFA && !b.sawFight && b.othersFighting(o) { // ours: two other mechs shooting each other means no squad
+		b.sawFight, b.otherDead = true, 5
+		if b.notPractice { // giddy flipped first: add our tuning now
+			b.base = ffaParams(b.base)
+			b.P = b.base
+		}
 	}
 	if b.otherDead >= 5 && !b.notPractice {
 		b.notPractice = true
-		b.base = ffaParams(b.base) // ours: free-for-all tuning, see ffa.go
+		if b.sawFight { // ours: free-for-all tuning only once our detector saw a fight (giddy's flip alone can fire in practice)
+			b.base = ffaParams(b.base)
+		}
 		b.P = b.base
 	}
 	if on := b.base.Practice && !b.notPractice && now > 20; on != b.pracOn {
