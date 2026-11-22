@@ -94,7 +94,7 @@ type Brain struct {
 	notPractice        bool
 	startAlive, kills  int
 	otherDead          int
-	sawFight           bool // ours
+	sawFight           bool    // ours
 	deaths             []known // ours: where mechs died (cube piles), for CubeHunt
 	stickID            int
 	stickAt, loseAt    float64
