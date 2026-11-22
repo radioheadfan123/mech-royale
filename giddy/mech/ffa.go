@@ -9,11 +9,12 @@ import (
 // Ours (not in giddy's original): parameters for free-for-all play, applied once the bot decides the match is not
 // practice (5 ticks after a death it did not cause). Practice play is unchanged.
 func ffaParams(p Params) Params {
+	
 	return p
 }
 
 // Ours: flip to free-for-all as soon as two other mechs are seen fighting each other (practice house bots only shoot at us).
-var earlyFFA = false
+var earlyFFA = true
 
 // othersFighting: an enemy gun bullet (about 252 m/s; drone bullets are 90) heading at a seen mech more than 20 m from us,
 // passing within 3 m of it in the next 80 m, while its line (both ways) stays 15 m or more from us, which rules out our own shots.
