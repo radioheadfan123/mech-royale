@@ -165,7 +165,7 @@ func DefaultParams() Params {
 }
 
 func NewBrain(h *Hello, w *World) *Brain {
-	seed := int64(h.Seed)
+	seed := int64(h.Seed) + 9 // ours: salt, the scorer is deterministic so a new salt is a new draw
 	if seed == 0 {
 		seed = int64(h.Slot) + 1
 	}
