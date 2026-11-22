@@ -1963,6 +1963,7 @@ func squadParams(p Params) Params {
 	p.LoseRule = true
 	p.FightLoot = 70
 	p.FarmHP = 0.5
+	p.DodgeBoost = 40 // ours: G19
 
 	p.LaserSeek = 240
 	p.LaserUp = true
