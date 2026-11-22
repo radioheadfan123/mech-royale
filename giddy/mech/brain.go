@@ -1384,7 +1384,7 @@ func (b *Brain) fightMove(o *Obs, tg *Track, seen []*Track, wantLos float64) (fl
 	bd := hyp(bx, by) + 1e-9
 	ux, uy := bx/bd, by/bd
 	if b.now >= b.strafeUntil {
-		if b.rng.Float64() < 0.6 {
+		if b.rng.Float64() < 0.65 {
 			b.strafe = -b.strafe
 		}
 		b.strafeUntil = b.now + 0.3 + b.rng.Float64()*0.7
