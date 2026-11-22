@@ -838,7 +838,7 @@ func (b *Brain) step(o *Obs, act *Action) {
 		if b.P.FightBoost > 0 && me.Energy > b.P.FightBoost && (laser == nil || laser.Charge <= 0) && (light == nil || me.Energy > 60) {
 			boost = true
 		}
-		if b.P.FightLoot > 0 {
+		if b.P.FightLoot > 0 && !(b.pracOn && me.Cubes >= 10) { // ours: cc1 cube cap
 			r := b.P.FightLoot
 			if hpFrac <= 0.5 {
 				r *= 0.57
@@ -1665,6 +1665,9 @@ func (b *Brain) chooseLoot(o *Obs, hpFrac float64, danger bool) *lootChoice {
 	econ := b.P.Econ
 	consider := func(kind string, id int, pos Vec3, value float64) {
 		if until, ok := b.bad[id]; ok && until > now {
+			return
+		}
+		if b.pracOn && me.Cubes >= 10 && (kind == "cube" || kind == "crate") { // ours: cc1 cube cap in squad (practice) mode
 			return
 		}
 		d := hyp(pos[0]-x, pos[1]-y)
