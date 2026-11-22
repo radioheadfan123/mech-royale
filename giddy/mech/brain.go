@@ -164,7 +164,7 @@ type Params struct {
 func DefaultParams() Params {
 	p := Params{RetreatHP: 0.38, RecoverHP: 0.8, GunRange: 85, LightRange: 28, LaserRange: 85, EngageDist: 60, FarmNPC: true, Explore: false,
 		Ghost: true, HomeExpo: 120, LootRadius: 90, CrateUntil: 150, UseDrops: false, Dodge: true, NoMortar: true,
-		Peek: true, LaserFirst: false, CrowdHide: true, Practice: true}
+		Peek: true, LaserFirst: false, CrowdHide: true, Practice: true, Opening: true}
 
 	p.LaserFirst = true
 
@@ -2031,7 +2031,7 @@ func (b *Brain) odds(me *Self, t *Track, now float64, opening bool) float64 {
 
 func squadParams(p Params) Params {
 	p.Ghost = false
-	p.Peek = false
+	p.Peek = true // ours: st1, pk1
 	p.LaserFirst = true
 	p.LaserRange = 120
 	p.LootRadius = 150
