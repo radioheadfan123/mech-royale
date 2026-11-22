@@ -9,7 +9,8 @@ import (
 // Ours (not in giddy's original): parameters for free-for-all play, applied once the bot decides the match is not
 // practice (5 ticks after a death it did not cause). Practice play is unchanged.
 func ffaParams(p Params) Params {
-	p.EarlyHide = 1e9
+	p.Lethal, p.LaserUp = true, true // release a part-charged laser when it kills; laser-first upgrades (we are LaserFirst)
+	p.FightLoot = 70
 	return p
 }
 
