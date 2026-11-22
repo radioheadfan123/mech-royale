@@ -902,7 +902,7 @@ func (b *Brain) step(o *Obs, act *Action) {
 			if now-n.HitMe < 3 {
 				off = 0
 			}
-			if off < bestOff {
+			if off < bestOff || (worst != nil && off == bestOff && (n.Dist < worst.Dist || (n.Dist == worst.Dist && n.ID < worst.ID))) { // ours: G22, ties by distance then id (map order is random)
 				bestOff, worst = off, n
 			}
 		}
@@ -1629,7 +1629,7 @@ func (b *Brain) chooseLoot(o *Obs, hpFrac float64, danger bool) *lootChoice {
 				u += 30
 			}
 		}
-		if u > bestU {
+		if u > bestU || (best != nil && u == bestU && id < best.id) { // ours: G22, ties by id
 			bestU = u
 			best = &lootChoice{kind, id, pos, value}
 		}

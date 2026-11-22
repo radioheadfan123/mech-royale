@@ -11,3 +11,4 @@ The `giddy/` folder is giddygiddyboy's Mech Royale bot, used under its MIT Licen
 - The Dockerfile builds it with `golang:1.26.1-bookworm` pinned by digest into a `scratch` image.
 
 Every change we make on top of it is listed in this section and in the git history of `giddy/`.
+- G22 (ours): deterministic tie-breaks when picking a drone to fight back (angle, then distance, then id) and a loot target (id), since Go map order is random.
