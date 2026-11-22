@@ -155,6 +155,8 @@ type Params struct {
 	LethalK     float64
 	CubeHunt    float64 // ours: FFA only, walk this far to where a mech died to collect its cubes
 	HoldDrop    bool    // ours: FFA only, stand still in a landed supply drop ring while the capture runs
+	Edge        bool    // ours: FFA only, final circles: hold cover at the edge facing in, step in only when the zone forces it
+	Crown       float64 // ours: FFA only, weight for hiding spots under tree crowns (unseen = untargeted)
 	Bank        float64 // ours: FFA only, hold fire and cover once the next circle is this small, see ffa.go
 }
 
@@ -361,6 +363,9 @@ func (b *Brain) observe(o *Obs) {
 	} else {
 		b.otherDead = 0
 	}
+	if earlyFFA && !b.notPractice && b.othersFighting(o) { // ours: two other mechs shooting each other means no squad
+		b.otherDead = 5
+	}
 	if b.otherDead >= 5 && !b.notPractice {
 		b.notPractice = true
 		b.base = ffaParams(b.base) // ours: free-for-all tuning, see ffa.go
@@ -557,6 +562,7 @@ func (b *Brain) step(o *Obs, act *Action) {
 	_, laser := hasWeapon(me.Weapons, "laser")
 	late := z.NextRadius <= 70 || o.Alive <= 3
 	bank := b.P.Bank > 0 && z.NextRadius <= b.P.Bank && o.Alive > 2 // ours
+	edge := b.P.Edge && z.NextRadius <= 30 && o.Alive > 2           // ours
 
 	var seen []*Track
 	var target, hidden, shy *Track
@@ -876,7 +882,7 @@ func (b *Brain) step(o *Obs, act *Action) {
 					mx, my = 0, 0
 				}
 			}
-		} else if zdist > 3 && (!b.P.Ghost || (z.NextRadius <= 30 && !bank)) {
+		} else if zdist > 3 && (!b.P.Ghost || (z.NextRadius <= 30 && !bank && !edge)) {
 			mx, my = b.travel(me, zgx, zgy)
 			mode = "zone-walk"
 		} else if b.P.Ghost {
@@ -1133,6 +1139,8 @@ func (b *Brain) step(o *Obs, act *Action) {
 			aim[0] = b.npcBearing
 		case now-b.lastHurt < 2.5:
 			aim[0] = b.hurtBearing
+		case edge && mx == 0 && my == 0: // ours: face the center from the edge
+			aim[0] = math.Atan2(z.NextCenter[1]-y, z.NextCenter[0]-x)
 		case mx != 0 || my != 0:
 			aim[0] = math.Atan2(my, mx) + 1.15*math.Sin(now*1.3)
 		default:
@@ -1870,7 +1878,11 @@ func (b *Brain) homeCost(o *Obs, px, py float64) float64 {
 		crowd += math.Max(0, 60-hyp(o.Drops[i].Pos[0]-px, o.Drops[i].Pos[1]-py)) / 60
 	}
 	edge := hyp(px-z.NextCenter[0], py-z.NextCenter[1]) / math.Max(30, z.NextRadius)
-	return b.P.HomeExpo*b.W.Exposure(px, py) + 0.25*hyp(px-o.Self.Pos[0], py-o.Self.Pos[1]) + 40*crowd + 10*edge
+	expo := b.W.Exposure(px, py)
+	if b.P.Crown > 0 { // ours
+		expo *= 1 - b.P.Crown*b.W.CrownCover(px, py)
+	}
+	return b.P.HomeExpo*expo + 0.25*hyp(px-o.Self.Pos[0], py-o.Self.Pos[1]) + 40*crowd + 10*edge
 }
 
 func (b *Brain) home(o *Obs) (float64, float64, bool) {

@@ -1591,3 +1591,19 @@ func (w *World) SupportAt(x, y, feetZ, r float64) float64 {
 	})
 	return z
 }
+
+// Ours: fraction of 8 directions (observers 60 m out at eye height) whose view of a mech standing here is blocked by tree crowns.
+func (w *World) CrownCover(x, y float64) float64 {
+	z := w.WalkAt(x, y)
+	lim := w.geo.Rules.CanopyBlockT
+	n := 0
+	for k := 0; k < 8; k++ {
+		a := float64(k) * math.Pi / 4
+		ox, oy := x+60*math.Cos(a), y+60*math.Sin(a)
+		eye := Vec3{ox, oy, w.WalkAt(ox, oy) + 8}
+		if w.CanopyTransmittance(eye, Vec3{x, y, z + 4.5}) < lim && w.CanopyTransmittance(eye, Vec3{x, y, z + 8.8}) < lim {
+			n++
+		}
+	}
+	return float64(n) / 8
+}
