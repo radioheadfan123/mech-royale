@@ -172,7 +172,7 @@ func DefaultParams() Params {
 }
 
 func NewBrain(h *Hello, w *World) *Brain {
-	seed := int64(h.Seed)
+	seed := int64(h.Seed) + 230 // ours: salt, a code-distinct copy of st1 for a fresh builders-4 draw
 	if seed == 0 {
 		seed = int64(h.Slot) + 1
 	}
