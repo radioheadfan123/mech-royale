@@ -2040,6 +2040,7 @@ func squadParams(p Params) Params {
 	p.MaxTarget = 240
 	p.LoseRule = true
 	p.FightLoot = 70
+	p.CubeHunt = 200
 	p.FarmHP = 0.5
 
 	p.LaserSeek = 240
