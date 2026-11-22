@@ -1780,7 +1780,7 @@ func (b *Brain) exploreMove(o *Obs) (float64, float64) {
 	if b.now > b.exploreUntil || hyp(b.explore[0]-x, b.explore[1]-y) < 6 {
 		for try := 0; try < 20; try++ {
 			a := b.rng.Float64() * 2 * math.Pi
-			r := math.Sqrt(b.rng.Float64()) * z.NextRadius * 0.8
+			r := math.Sqrt(b.rng.Float64()) * z.NextRadius * 0.78
 			px, py := z.NextCenter[0]+math.Cos(a)*r, z.NextCenter[1]+math.Sin(a)*r
 			if !b.W.InBounds(px, py) || !b.W.Free(px, py) {
 				continue
