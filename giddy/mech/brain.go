@@ -2010,7 +2010,7 @@ func (b *Brain) odds(me *Self, t *Track, now float64, opening bool) float64 {
 
 func squadParams(p Params) Params {
 	p.Ghost = false
-	p.Peek = false
+	p.Peek = true
 	p.LaserFirst = true
 	p.LaserRange = 120
 	p.LootRadius = 150
