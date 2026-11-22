@@ -1963,6 +1963,7 @@ func squadParams(p Params) Params {
 	p.LoseRule = true
 	p.FightLoot = 70
 	p.FarmHP = 0.5
+	p.RetreatHP = 0.5 // ours: G18, retreat earlier (was 0.38)
 
 	p.LaserSeek = 240
 	p.LaserUp = true
