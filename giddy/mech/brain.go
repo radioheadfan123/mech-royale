@@ -478,6 +478,16 @@ func (b *Brain) inDrop(o *Obs, hpFrac float64) bool {
 	return false
 }
 
+// ours: a landed, unheld drop ring within 60 m, worth walking into even mid-fight (HoldDrop then keeps us in it).
+func (b *Brain) nearDrop(o *Obs, hpFrac float64) (float64, float64, bool) {
+	for _, d := range o.Drops {
+		if d.LandsIn <= 0 && d.Holder == nil && hpFrac > 0.3 && hyp(d.Pos[0]-o.Self.Pos[0], d.Pos[1]-o.Self.Pos[1]) < 60 {
+			return d.Pos[0], d.Pos[1], true
+		}
+	}
+	return 0, 0, false
+}
+
 func hasWeapon(ws []*WeaponState, kind string) (int, *WeaponState) {
 	for i, w := range ws {
 		if w != nil && w.Kind == kind {
@@ -749,6 +759,7 @@ func (b *Brain) step(o *Obs, act *Action) {
 	zoneShould := now+tNeed+14 >= deadline
 
 	escJump := false
+	dropX, dropY, dropGo := b.nearDrop(o, hpFrac)
 	switch {
 	case b.escape(me, &mx, &my, &boost, &escJump):
 		mode = "escape"
@@ -764,6 +775,9 @@ func (b *Brain) step(o *Obs, act *Action) {
 		mx, my = b.travel(me, zgx, zgy)
 		boost = (!me.InZone || now+tNeed >= deadline) && me.Energy > 5
 		mode = "zone"
+	case b.P.UseDrops && dropGo: // ours
+		mx, my = b.travel(me, dropX, dropY)
+		mode = "drop-go"
 	case b.retreat && !finishing && !late:
 		if b.coverMove(o, seen, &mx, &my) {
 			boost = me.Energy > 10 && (mx != 0 || my != 0)
@@ -2040,6 +2054,7 @@ func squadParams(p Params) Params {
 	p.MaxTarget = 240
 	p.LoseRule = true
 	p.FightLoot = 70
+	p.UseDrops, p.HoldDrop = true, true // ours: dr1, take supply drops in practice too
 	p.FarmHP = 0.5
 
 	p.LaserSeek = 240
