@@ -1963,6 +1963,7 @@ func squadParams(p Params) Params {
 	p.LoseRule = true
 	p.FightLoot = 70
 	p.FarmHP = 0.5
+	p.FightBoost, p.DodgeBoost, p.ThreatBoost = 50, 40, 50 // ours: G21, boost while strafing in fights, dodging, or under fire
 
 	p.LaserSeek = 240
 	p.LaserUp = true

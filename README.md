@@ -11,3 +11,4 @@ The `giddy/` folder is giddygiddyboy's Mech Royale bot, used under its MIT Licen
 - The Dockerfile builds it with `golang:1.26.1-bookworm` pinned by digest into a `scratch` image.
 
 Every change we make on top of it is listed in this section and in the git history of `giddy/`.
+- G21 (ours): in practice squad mode, boost (jets) while fighting, dodging, or under fire when energy allows (giddy's FightBoost 50, DodgeBoost 40, ThreatBoost 50, off in the original).
