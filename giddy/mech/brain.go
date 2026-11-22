@@ -366,7 +366,7 @@ func (b *Brain) observe(o *Obs) {
 	if earlyFFA && !b.notPractice && b.othersFighting(o) { // ours: two other mechs shooting each other means no squad
 		b.otherDead = 5
 	}
-	if b.otherDead >= 5 && !b.notPractice {
+	if false && b.otherDead >= 5 && !b.notPractice {
 		b.notPractice = true
 		b.base = ffaParams(b.base) // ours: free-for-all tuning, see ffa.go
 		b.P = b.base
