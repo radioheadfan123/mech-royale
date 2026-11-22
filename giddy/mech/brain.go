@@ -1822,7 +1822,7 @@ func (b *Brain) home(o *Obs) (float64, float64, bool) {
 		best, bestC := [2]float64{}, math.Inf(1)
 		for k := 0; k < 40; k++ {
 			a := b.rng.Float64() * 2 * math.Pi
-			r := math.Sqrt(b.rng.Float64()) * z.NextRadius * 0.7
+			r := math.Sqrt(b.rng.Float64()) * z.NextRadius * 0.68
 			px, py := z.NextCenter[0]+math.Cos(a)*r, z.NextCenter[1]+math.Sin(a)*r
 			if !b.W.InBounds(px, py) || !b.W.Reachable(px, py) {
 				continue
