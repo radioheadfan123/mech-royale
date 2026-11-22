@@ -95,6 +95,7 @@ type Brain struct {
 	startAlive, kills  int
 	otherDead          int
 	sawFight           bool    // ours
+	sndAt, sndBear     float64 // ours: latest nearby mech sound, see HearFace
 	deaths             []known // ours: where mechs died (cube piles), for CubeHunt
 	stickID            int
 	stickAt, loseAt    float64
@@ -141,6 +142,7 @@ type Params struct {
 	CubeGoal    float64
 	Econ        bool
 	LaserUp     bool
+	HearFace    float64 // ours: seconds to face the latest near/mid mech sound when idle
 	EconSafe    float64
 	Opening     bool
 	NanoUp      bool
@@ -330,6 +332,14 @@ func (b *Brain) observe(o *Obs) {
 		}
 	}
 
+	for _, snd := range o.Sounds { // ours: latest near/mid mech sound, for HearFace
+		switch snd.Kind {
+		case "gun", "laser", "laser_charge", "lightning", "boost", "jet", "step", "mortar", "reload":
+			if snd.Dist != "far" && now-snd.Age >= b.sndAt {
+				b.sndAt, b.sndBear = now-snd.Age, snd.Bearing
+			}
+		}
+	}
 	if b.P.CubeHunt > 0 { // ours: a death sound on the bearing of a tracked mech marks its cube pile
 		for _, snd := range o.Sounds {
 			if snd.Kind != "death" || snd.Age > 0.2 {
@@ -1148,6 +1158,8 @@ func (b *Brain) step(o *Obs, act *Action) {
 			aim[0] = b.hurtBearing
 		case edge && mx == 0 && my == 0: // ours: face the center from the edge
 			aim[0] = math.Atan2(z.NextCenter[1]-y, z.NextCenter[0]-x)
+		case b.P.HearFace > 0 && b.sndAt > 0 && now-b.sndAt < b.P.HearFace: // ours: turn the vision wedge toward an unseen mech
+			aim[0] = b.sndBear + 0.6*math.Sin(now*1.3)
 		case mx != 0 || my != 0:
 			aim[0] = math.Atan2(my, mx) + 1.15*math.Sin(now*1.3)
 		default:
